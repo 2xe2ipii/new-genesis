@@ -172,10 +172,15 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
                isInteractable = isMe;
             }
 
+            // FIX 3: STRICT DISABLE LOGIC
+            // If targeting, rely ONLY on isInteractable. 
+            // If not targeting, disable everyone except Self (for potential profile view)
+            const isDisabled = isTargeting ? !isInteractable : !isMe;
+
             return (
               <button
                 key={p.id}
-                disabled={!isInteractable && !isMe} 
+                disabled={isDisabled} 
                 onClick={() => handlePlayerTap(p.id)}
                 className={`relative aspect-square rounded-lg flex flex-col items-center justify-center p-2 transition-all duration-300 border ${
                   isMe 
@@ -205,7 +210,18 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
       </div>
 
       {/* 4. TACTICAL FOOTER */}
-      <div className="bg-slate-900 border-t border-slate-800 p-4 space-y-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20">
+      <div className="bg-slate-900 border-t border-slate-800 p-4 space-y-3 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20">
+        
+        {/* FIX 2: INFO PANEL (Readable Description) */}
+        {cardConfig && (
+            <div className="bg-slate-950/50 border border-slate-800 rounded p-2 text-center shadow-inner">
+                 <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                    {me.isCardUsed && targetName 
+                        ? <span className="text-yellow-500">TARGET CONFIRMED: {targetName}</span> 
+                        : cardConfig.desc}
+                 </p>
+            </div>
+        )}
         
         {/* WEAPON SLOT */}
         {cardConfig && (
@@ -231,12 +247,6 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
                  <span className={`text-sm font-black uppercase tracking-wider ${me.isCardUsed ? 'text-slate-500 line-through' : 'text-white'}`}>
                    {me.abilityCard}
                  </span>
-                 {/* DESCRIPTION OR TARGET NAME */}
-                 <span className="text-[9px] text-slate-400 mt-0.5 max-w-[150px] truncate text-left">
-                    {me.isCardUsed && targetName 
-                        ? `USED ON: ${targetName}` 
-                        : cardConfig.desc}
-                 </span>
                </div>
              </div>
 
@@ -256,7 +266,7 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
            </button>
         )}
 
-        {/* VOTE TO SKIP BUTTON (Toggle Logic) */}
+        {/* VOTE TO SKIP BUTTON */}
         <button
           onClick={onVoteToSkip}
           className={`w-full p-4 rounded-lg font-bold uppercase tracking-[0.2em] text-xs transition-all border ${

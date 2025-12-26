@@ -35,7 +35,7 @@ export const useGame = () => {
       const newPlayer: Player = {
         id: playerId, name: playerName, isHost: true, isReady: false,
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
-        cardTargetId: null, // <--- INIT
+        cardTargetId: null,
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
         isScrambled: false 
       };
@@ -70,7 +70,7 @@ export const useGame = () => {
       const newPlayer: Player = {
         id: playerId, name: playerName, isHost: false, isReady: false,
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
-        cardTargetId: null, // <--- INIT
+        cardTargetId: null,
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
         isScrambled: false
       };
@@ -107,14 +107,17 @@ export const useGame = () => {
       updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 10 * 60 * 1000;
       updates[`rooms/${gameState.code}/majorityWord`] = majority;
       updates[`rooms/${gameState.code}/impostorWord`] = impostor;
-      updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = []; 
+      updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
+      
+      // FIX 1: Clear System Messages on Start
+      updates[`rooms/${gameState.code}/systemMessages`] = null; 
 
       Object.keys(gameState.players).forEach(pid => {
         updates[`rooms/${gameState.code}/players/${pid}/role`] = assignments[pid].role;
         updates[`rooms/${gameState.code}/players/${pid}/secretWord`] = assignments[pid].word;
         updates[`rooms/${gameState.code}/players/${pid}/abilityCard`] = cardAssignments[pid];
         updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
-        updates[`rooms/${gameState.code}/players/${pid}/cardTargetId`] = null; // <--- RESET
+        updates[`rooms/${gameState.code}/players/${pid}/cardTargetId`] = null;
         updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
         updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false;
         updates[`rooms/${gameState.code}/players/${pid}/votesReceived`] = 0;
@@ -142,11 +145,12 @@ export const useGame = () => {
 
     // 1. Mark Card as Used & SAVE TARGET
     updates[`rooms/${gameState.code}/players/${playerId}/isCardUsed`] = true;
-    updates[`rooms/${gameState.code}/players/${playerId}/cardTargetId`] = targetId; // <--- SAVE TARGET
+    updates[`rooms/${gameState.code}/players/${playerId}/cardTargetId`] = targetId;
 
     // 2. Handle Effects
     if (myPlayer.abilityCard === 'RADAR') {
       const isActuallyThreat = ['SPY', 'TOURIST', 'JOKER'].includes(targetPlayer.role || '');
+      // @ts-ignore
       const isScrambled = targetPlayer.isScrambled === true;
       
       const finalResultIsThreat = isScrambled ? !isActuallyThreat : isActuallyThreat;
@@ -269,13 +273,16 @@ export const useGame = () => {
      updates[`rooms/${gameState.code}/winner`] = null;
      updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
      
+     // FIX 1: Clear System Messages on Return
+     updates[`rooms/${gameState.code}/systemMessages`] = null;
+
      Object.keys(gameState.players).forEach(pid => {
        updates[`rooms/${gameState.code}/players/${pid}/isReady`] = false;
        updates[`rooms/${gameState.code}/players/${pid}/role`] = null;
        updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
        updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
        updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
-       updates[`rooms/${gameState.code}/players/${pid}/cardTargetId`] = null; // <--- RESET
+       updates[`rooms/${gameState.code}/players/${pid}/cardTargetId`] = null;
        updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
        updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false;
      });
