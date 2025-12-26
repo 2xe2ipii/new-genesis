@@ -1,6 +1,6 @@
 // src/components/RevealScreen.tsx
 import React, { useState } from 'react';
-import type { Player } from '../types';
+import type { Player, AbilityCard } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface RevealScreenProps {
@@ -49,6 +49,41 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
     }
   };
 
+  // 2. ITEM VISUALS
+  const getItemDetails = (card: AbilityCard) => {
+    switch (card) {
+      case 'RADAR':
+        return {
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+              <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a9.75 9.75 0 11-19.5 0 9.75 9.75 0 0119.5 0zM12 5.25a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5z" />
+            </svg>
+          ),
+          desc: "Scan player alignment."
+        };
+      case 'INTERCEPT':
+        return {
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+              <path fillRule="evenodd" d="M19.902 4.098a3.75 3.75 0 00-5.304 0l-4.5 4.5a3.75 3.75 0 001.035 6.037.75.75 0 01-.646 1.352 5.25 5.25 0 01-1.449-8.45l4.5-4.5a5.25 5.25 0 117.424 7.424l-1.757 1.757a.75.75 0 11-1.06-1.06l1.757-1.757a3.75 3.75 0 000-5.303zm-7.389 4.267a.75.75 0 011-.353c1.135.418 2.159 1.103 3.014 1.95s1.533 1.879 1.95 3.014a.75.75 0 11-1.4.516 5.26 5.26 0 00-1.783-2.26.75.75 0 01-.354-1h.573z" clipRule="evenodd" />
+            </svg>
+          ),
+          desc: "Reveal enemy data."
+        };
+      case 'SILENCER':
+        return {
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+              <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.5 12a2.5 2.5 0 10-5 0 2.5 2.5 0 005 0z" />
+            </svg>
+          ),
+          desc: "Nullify one vote."
+        };
+      default:
+        return { icon: null, desc: "" };
+    }
+  };
+
   const theme = getTheme();
 
   return (
@@ -69,7 +104,7 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
           </h2>
         </div>
 
-        <div className="relative min-h-[400px]">
+        <div className="relative min-h-[420px]">
           <AnimatePresence mode="wait">
             {!isRevealed ? (
               /* --- STATE 1: LOCKED (ENCRYPTED) --- */
@@ -79,7 +114,7 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 1.1, opacity: 0, filter: "blur(10px)" }}
                 onClick={() => setIsRevealed(true)}
-                className="w-full h-[400px] bg-slate-900/80 border border-slate-700 rounded-xl flex flex-col items-center justify-center gap-6 group hover:border-violet-500 transition-colors shadow-2xl relative overflow-hidden"
+                className="w-full h-[420px] bg-slate-900/80 border border-slate-700 rounded-xl flex flex-col items-center justify-center gap-6 group hover:border-violet-500 transition-colors shadow-2xl relative overflow-hidden"
               >
                 {/* Animated Scan Line */}
                 <div className="absolute top-0 w-full h-1 bg-violet-500/50 shadow-[0_0_15px_rgba(139,92,246,0.5)] animate-[scan_3s_ease-in-out_infinite]" />
@@ -101,7 +136,7 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
                 key="revealed"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`w-full h-[400px] bg-slate-900 border-2 ${theme.border} rounded-xl shadow-2xl ${theme.glow} flex flex-col relative overflow-hidden`}
+                className={`w-full h-[420px] bg-slate-900 border-2 ${theme.border} rounded-xl shadow-2xl ${theme.glow} flex flex-col relative overflow-hidden`}
               >
                 {/* ID Header */}
                 <div className="bg-slate-950 p-4 border-b border-slate-800 flex justify-between items-center">
@@ -113,39 +148,49 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-6">
+                <div className="flex-1 p-6 flex flex-col items-center justify-between">
                   
                   {/* ROLE */}
-                  <div>
+                  <div className="text-center mt-2">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Assigned Role</p>
-                    <h1 className={`text-5xl font-black uppercase tracking-tighter ${theme.main} drop-shadow-lg`}>
+                    <h1 className={`text-5xl font-black uppercase tracking-tighter ${theme.main} drop-shadow-lg leading-none`}>
                       {player.role}
                     </h1>
                   </div>
 
-                  {/* SEPARATOR */}
-                  <div className="w-12 h-0.5 bg-slate-800" />
-
-                  {/* WORD */}
-                  <div className="w-full bg-slate-950/50 p-4 rounded-lg border border-slate-800">
+                  {/* WORD BOX */}
+                  <div className="w-full bg-slate-950/50 p-4 rounded-lg border border-slate-800 text-center">
                     <p className="text-[10px] font-mono text-slate-500 uppercase mb-1">Passphrase</p>
                     <p className="text-2xl font-bold text-white tracking-widest">
                       {player.secretWord || "/// NO DATA"}
                     </p>
                   </div>
 
-                  {/* ABILITY */}
+                  {/* ITEM SLOT (The Fix) */}
                   {player.abilityCard && (
-                     <div className="w-full text-left">
-                       <div className="flex items-center gap-2 mb-1">
-                         <div className="w-1.5 h-1.5 bg-violet-500 rounded-full" />
-                         <p className="text-[9px] font-bold text-violet-400 uppercase tracking-widest">Asset Acquired</p>
-                       </div>
-                       <p className="text-sm font-mono text-slate-300 uppercase truncate">
-                         {player.abilityCard}
-                       </p>
-                     </div>
+                    <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-4">
+                      {/* Icon Box */}
+                      <div className="w-10 h-10 bg-amber-500/20 rounded flex items-center justify-center text-amber-500 shrink-0">
+                         {getItemDetails(player.abilityCard).icon}
+                      </div>
+                      
+                      {/* Item Details */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">
+                          Hardware Acquired
+                        </p>
+                        <p className="text-sm font-black text-white uppercase tracking-wider truncate">
+                          {player.abilityCard}
+                        </p>
+                      </div>
+                    </div>
                   )}
+                  
+                  {/* Empty Slot Placeholder if no card (keeps layout consistent) */}
+                  {!player.abilityCard && (
+                     <div className="w-full h-[66px]" />
+                  )}
+
                 </div>
 
                 {/* Footer Decor */}
@@ -157,7 +202,7 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
           </AnimatePresence>
         </div>
 
-        {/* CONFIRM BUTTON (Only shows after reveal) */}
+        {/* CONFIRM BUTTON */}
         <div className="h-20 mt-6 flex items-end">
           {isRevealed && (
             <motion.button
