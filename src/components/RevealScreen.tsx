@@ -147,7 +147,7 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
               <span className="text-xs opacity-50 group-hover:opacity-100">{`[ 001 ]`}</span>
               
               <span className="font-mono text-xs uppercase tracking-[0.2em] font-bold">
-                 ACKNOWLEDGE_&_BURN
+                 YIELD_&_BURN
               </span>
               
               <span className="text-xs opacity-50 group-hover:opacity-100">{`[ END ]`}</span>
