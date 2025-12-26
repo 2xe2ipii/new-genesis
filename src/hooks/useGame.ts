@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ref, set, update, onValue, get, child, remove } from 'firebase/database';
+import { useState, useEffect } from 'react';
+import { ref, set, update, onValue, get, remove, runTransaction } from 'firebase/database';
 import { db } from '../services/firebase';
-import type { Room, Player, GamePhase, PlayerRole } from '../types';
+import type { Room, Player, PlayerRole } from '../types';
 import { generateRoomCode, getStoredPlayerId } from '../utils/helpers';
 import { distributeGameRoles } from '../utils/gameLogic';
 
@@ -11,61 +11,44 @@ export const useGame = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- 1. LISTENER ---
-  // Automatically syncs local state whenever Firebase changes
-  useEffect(() => {
-    // If we are in a room (we know this if gameState.code exists), subscribe to it.
-    // However, usually we store the 'active room code' in local state or URL.
-    // For this simple version, we'll rely on the component telling us which room to listen to 
-    // OR we track it internally if we successfully joined.
-    
-    // (Note: To keep this hook clean, we will only subscribe if we have a valid room code.
-    // We will implement the subscription inside the join/create logic mostly, or use a separate effect
-    // if we persist roomCode in localStorage. For now, let's stick to session-based.)
-  }, []);
+  // --- LISTENER ---
+  const subscribeToRoom = (roomCode: string) => {
+    const roomRef = ref(db, `rooms/${roomCode}`);
+    onValue(roomRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Firebase stores arrays as objects if keys are indices, or sometimes nulls.
+        // Ensure arrays exist to prevent crashes
+        if (!data.votesToSkipDiscussion) data.votesToSkipDiscussion = [];
+        setGameState(data);
+      } else {
+        setGameState(null);
+      }
+    });
+  };
 
-  // --- 2. ACTIONS ---
+  // --- ACTIONS ---
 
   const createRoom = async (playerName: string) => {
     setLoading(true);
-    setError(null);
     try {
       const roomCode = generateRoomCode();
       const newPlayer: Player = {
-        id: playerId,
-        name: playerName,
-        isHost: true,
-        isReady: false,
-        role: null,
-        secretWord: '',
-        abilityCard: null,
-        isCardUsed: false,
-        votedFor: null,
-        isVoteLocked: false,
-        votesReceived: 0,
-        isSilenced: false,
+        id: playerId, name: playerName, isHost: true, isReady: false,
+        role: null, secretWord: '', abilityCard: null, isCardUsed: false,
+        votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
       };
 
       const newRoom: Room = {
-        code: roomCode,
-        hostId: playerId,
-        players: { [playerId]: newPlayer },
-        phase: 'LOBBY',
-        timerEndTime: 0,
-        majorityWord: '',
-        impostorWord: '',
-        votesToSkipDiscussion: [],
-        winner: null,
+        code: roomCode, hostId: playerId, players: { [playerId]: newPlayer },
+        phase: 'LOBBY', timerEndTime: 0, majorityWord: '', impostorWord: '',
+        votesToSkipDiscussion: [], winner: null,
       };
 
-      // Write to Firebase
       await set(ref(db, `rooms/${roomCode}`), newRoom);
-      
-      // Subscribe to changes
       subscribeToRoom(roomCode);
-    } catch (err) {
-      setError('Failed to create room');
-      console.error(err);
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -73,44 +56,23 @@ export const useGame = () => {
 
   const joinRoom = async (roomCode: string, playerName: string) => {
     setLoading(true);
-    setError(null);
     const code = roomCode.toUpperCase();
-
     try {
-      const roomRef = ref(db, `rooms/${code}`);
-      const snapshot = await get(roomRef);
-
-      if (!snapshot.exists()) {
-        throw new Error('Room not found');
-      }
-
-      const roomData = snapshot.val() as Room;
-
-      if (roomData.phase !== 'LOBBY') {
-        // Optional: Allow rejoin if ID matches, otherwise block
-        if (!roomData.players[playerId]) {
-          throw new Error('Game already in progress');
-        }
+      const snapshot = await get(ref(db, `rooms/${code}`));
+      if (!snapshot.exists()) throw new Error('Room not found');
+      
+      const roomData = snapshot.val();
+      if (roomData.phase !== 'LOBBY' && !roomData.players[playerId]) {
+        throw new Error('Game in progress');
       }
 
       const newPlayer: Player = {
-        id: playerId,
-        name: playerName,
-        isHost: false, // Default false, unless they are rejoining and were host
-        isReady: false,
-        role: null,
-        secretWord: '',
-        abilityCard: null,
-        isCardUsed: false,
-        votedFor: null,
-        isVoteLocked: false,
-        votesReceived: 0,
-        isSilenced: false,
+        id: playerId, name: playerName, isHost: false, isReady: false,
+        role: null, secretWord: '', abilityCard: null, isCardUsed: false,
+        votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
       };
 
-      // Update Firebase with new player
       await update(ref(db, `rooms/${code}/players/${playerId}`), newPlayer);
-      
       subscribeToRoom(code);
     } catch (err: any) {
       setError(err.message);
@@ -119,53 +81,34 @@ export const useGame = () => {
     }
   };
 
-  // Helper to start listening to Firebase
-  const subscribeToRoom = (roomCode: string) => {
-    const roomRef = ref(db, `rooms/${roomCode}`);
-    onValue(roomRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setGameState(data);
-      } else {
-        setGameState(null); // Room deleted
-      }
-    });
-  };
-
   const leaveRoom = async () => {
     if (!gameState) return;
-    const roomRef = ref(db, `rooms/${gameState.code}/players/${playerId}`);
-    await remove(roomRef);
+    await remove(ref(db, `rooms/${gameState.code}/players/${playerId}`));
     setGameState(null);
   };
 
   const toggleReady = async () => {
     if (!gameState) return;
-    const playerRef = ref(db, `rooms/${gameState.code}/players/${playerId}/isReady`);
-    // Toggle current ready state
-    const me = gameState.players[playerId];
-    await set(playerRef, !me.isReady);
+    const player = gameState.players[playerId];
+    await set(ref(db, `rooms/${gameState.code}/players/${playerId}/isReady`), !player.isReady);
   };
 
   const startGame = async () => {
     if (!gameState) return;
-    
     setLoading(true);
     try {
       const { assignments, cardAssignments, majority, impostor } = distributeGameRoles(gameState.players);
-      
       const updates: Record<string, any> = {};
-      
-      // Update Room State
+
       updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
+      updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 10 * 60 * 1000; // 10 Mins
       updates[`rooms/${gameState.code}/majorityWord`] = majority;
       updates[`rooms/${gameState.code}/impostorWord`] = impostor;
-      
-      // Update Each Player
+      updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = []; // Reset skips
+
       Object.keys(gameState.players).forEach(pid => {
-        const roleData = assignments[pid];
-        updates[`rooms/${gameState.code}/players/${pid}/role`] = roleData.role;
-        updates[`rooms/${gameState.code}/players/${pid}/secretWord`] = roleData.word;
+        updates[`rooms/${gameState.code}/players/${pid}/role`] = assignments[pid].role;
+        updates[`rooms/${gameState.code}/players/${pid}/secretWord`] = assignments[pid].word;
         updates[`rooms/${gameState.code}/players/${pid}/abilityCard`] = cardAssignments[pid];
         updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
         updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
@@ -174,26 +117,72 @@ export const useGame = () => {
         updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
       });
 
-      // Atomic Update (All or nothing)
       await update(ref(db), updates);
-
     } catch (err) {
-      console.error("Failed to start game", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // --- CARD LOGIC ---
+  const useCard = async (targetId: string): Promise<string> => {
+    if (!gameState) return "";
+    
+    const myPlayer = gameState.players[playerId];
+    const targetPlayer = gameState.players[targetId];
+    if (!myPlayer.abilityCard || myPlayer.isCardUsed) return "";
+
+    let resultMessage = "";
+
+    // 1. Calculate Result locally (safe enough for beach game)
+    if (myPlayer.abilityCard === 'RADAR') {
+      const isThreat = ['SPY', 'TOURIST', 'JOKER'].includes(targetPlayer.role || '');
+      resultMessage = isThreat ? `THREAT DETECTED: ${targetPlayer.name}` : `SAFE: ${targetPlayer.name} is a Local.`;
+    } 
+    else if (myPlayer.abilityCard === 'INTERCEPT') {
+      // If I am Spy, I want majority word. If I am Local, I want Impostor word.
+      const wordToReveal = myPlayer.role === 'SPY' ? gameState.majorityWord : gameState.impostorWord;
+      resultMessage = `Intercepted Data: Starts with "${wordToReveal.charAt(0)}"`;
+    }
+    else if (myPlayer.abilityCard === 'SILENCER') {
+      await update(ref(db, `rooms/${gameState.code}/players/${targetId}/isSilenced`), true);
+      resultMessage = `Silenced ${targetPlayer.name}. Their vote is now 0.`;
+    }
+
+    // 2. Mark Card as Used
+    await update(ref(db, `rooms/${gameState.code}/players/${playerId}/isCardUsed`), true);
+    
+    return resultMessage;
+  };
+
+  // --- SKIP LOGIC ---
+  const voteToSkip = async () => {
+    if (!gameState) return;
+    
+    const roomRef = ref(db, `rooms/${gameState.code}`);
+    await runTransaction(roomRef, (currentRoom: Room) => {
+      if (!currentRoom) return;
+      if (!currentRoom.votesToSkipDiscussion) currentRoom.votesToSkipDiscussion = [];
+      
+      // Add me if not already in
+      if (!currentRoom.votesToSkipDiscussion.includes(playerId)) {
+        currentRoom.votesToSkipDiscussion.push(playerId);
+      }
+
+      // Check consensus
+      const totalPlayers = Object.keys(currentRoom.players).length;
+      if (currentRoom.votesToSkipDiscussion.length >= totalPlayers) {
+        currentRoom.phase = 'VOTING';
+      }
+      
+      return currentRoom;
+    });
+  };
+
   return {
-    gameState,
-    playerId,
-    loading,
-    error,
-    createRoom,
-    joinRoom,
-    startGame,
-    leaveRoom,
-    toggleReady,
-    // We will add more specific game actions (vote, start game) in the next phase
+    gameState, playerId, loading, error,
+    createRoom, joinRoom, leaveRoom, toggleReady,
+    startGame, useCard, voteToSkip
   };
 };
