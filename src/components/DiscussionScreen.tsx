@@ -115,30 +115,21 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
         </div>
       </div>
 
-      {/* 2. SYSTEM FEED (New Alert System) */}
+      {/* 2. SYSTEM FEED */}
       <div className="bg-slate-900/80 border-b border-slate-800 h-10 flex items-center px-4 overflow-hidden relative">
          <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 animate-pulse" />
          <AnimatePresence mode="wait">
             {latestMessage ? (
-               // Filter: Don't show Radar result if I am the target
-               (latestMessage.type === 'RADAR_RESULT' && latestMessage.targetId === me.id) ? (
-                 <motion.p 
-                   key="safe-message"
-                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                   className="text-[10px] font-mono text-slate-500 uppercase tracking-wider"
-                 >
-                   // SYSTEM SCAN DETECTED ON YOUR ID...
-                 </motion.p>
-               ) : (
-                 <motion.p 
-                   key={latestMessage.text}
-                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                   exit={{ opacity: 0, y: -10 }}
-                   className="text-[10px] font-mono text-blue-300 font-bold uppercase tracking-wider truncate"
-                 >
-                   {`>> ${latestMessage.text}`}
-                 </motion.p>
-               )
+              // FIX: Removed the filter that hid the message from the target.
+              // Now everyone sees the exact same message.
+              <motion.p 
+                key={latestMessage.text}
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="text-[10px] font-mono text-blue-300 font-bold uppercase tracking-wider truncate"
+              >
+                {`>> ${latestMessage.text}`}
+              </motion.p>
             ) : (
                <p className="text-[10px] font-mono text-slate-600 uppercase tracking-wider">
                   // SYSTEM MONITORING ACTIVE...
@@ -153,23 +144,20 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
           {playersList.map(p => {
             const isMe = p.id === me.id;
             
-            // Logic: Determine who is interactive based on the active card rules
+            // --- NEW TARGETING LOGIC ---
             let isInteractable = false;
 
             if (isTargeting) {
+               // 1. SILENCER: Cannot target self
                if (me.abilityCard === 'SILENCER' && isMe) {
-                 // Silencer cannot silence self
                  isInteractable = false; 
-               } else if (me.abilityCard === 'RADAR' && isMe) {
-                 // Radar cannot scan self
-                 isInteractable = false;
-               } else {
-                 // Spoof can target anyone (including self).
-                 // Other cards (if added later) default to true for now.
+               }
+               // 2. RADAR & SPOOF: Can target ANYONE (including self)
+               else {
                  isInteractable = true;
                }
             } else {
-               // When not targeting, buttons are just for show/status
+               // Not targeting? Only allow clicking self (to view profile if implemented)
                isInteractable = isMe;
             }
 
@@ -192,8 +180,9 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
                 </span>
 
                 {isMe && <span className="text-[8px] text-slate-500 mt-1 uppercase">UNIT_SELF</span>}
-                {/* Visual Indicators for Silencer only (Spoof is hidden) */}
-                {p.isSilenced && <span className="absolute top-1 right-1 text-rose-500">🔇</span>}
+                
+                {/* FIX: Removed the isSilenced icon. 
+                    Silenced players will no longer know they are silenced during Discussion. */}
 
                 {/* Dynamic Target Overlay */}
                 {isTargeting && isInteractable && cardConfig && (

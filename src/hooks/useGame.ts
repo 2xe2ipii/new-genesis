@@ -1,3 +1,4 @@
+// src/hooks/useGame.ts
 import { useState } from 'react';
 import { ref, set, update, onValue, get, remove, runTransaction, push } from 'firebase/database';
 import { db } from '../services/firebase';
@@ -17,7 +18,6 @@ export const useGame = () => {
     onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Ensure arrays exist to prevent crashes
         if (!data.votesToSkipDiscussion) data.votesToSkipDiscussion = [];
         setGameState(data);
       } else {
@@ -36,7 +36,6 @@ export const useGame = () => {
         id: playerId, name: playerName, isHost: true, isReady: false,
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
-        // @ts-ignore - Assuming type definition will be updated to include isScrambled
         isScrambled: false 
       };
 
@@ -71,7 +70,6 @@ export const useGame = () => {
         id: playerId, name: playerName, isHost: false, isReady: false,
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
-        // @ts-ignore
         isScrambled: false
       };
 
@@ -104,7 +102,7 @@ export const useGame = () => {
       const updates: Record<string, any> = {};
 
       updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
-      updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 10 * 60 * 1000; // 10 Mins
+      updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 10 * 60 * 1000;
       updates[`rooms/${gameState.code}/majorityWord`] = majority;
       updates[`rooms/${gameState.code}/impostorWord`] = impostor;
       updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = []; 
@@ -115,7 +113,7 @@ export const useGame = () => {
         updates[`rooms/${gameState.code}/players/${pid}/abilityCard`] = cardAssignments[pid];
         updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
         updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
-        updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false; // Reset Scramble
+        updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false;
         updates[`rooms/${gameState.code}/players/${pid}/votesReceived`] = 0;
         updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
         updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
@@ -144,16 +142,15 @@ export const useGame = () => {
 
     // 2. Handle Effects
     if (myPlayer.abilityCard === 'RADAR') {
-      // Logic: 
-      // SPY/TOURIST/JOKER = Threat (true)
-      // LOCAL = Safe (false)
+      // Logic: SPY/TOURIST/JOKER = Threat (true)
       const isActuallyThreat = ['SPY', 'TOURIST', 'JOKER'].includes(targetPlayer.role || '');
       
       // CHECK FOR SCRAMBLER TRAP
-      // @ts-ignore
       const isScrambled = targetPlayer.isScrambled === true;
       
       // If scrambled, flip the result. If not, keep original.
+      // e.g., Local (Safe) + Scrambled -> Threat
+      // e.g., Spy (Threat) + Scrambled -> Safe
       const finalResultIsThreat = isScrambled ? !isActuallyThreat : isActuallyThreat;
       const resultText = finalResultIsThreat ? `THREAT` : `SAFE`;
 
@@ -175,13 +172,9 @@ export const useGame = () => {
       updates[`rooms/${gameState.code}/players/${targetId}/isSilenced`] = true;
       // Silencer is silent. No system message.
     }
-    else if (myPlayer.abilityCard === 'SPOOF') { // The "Dark Card"
-      // Plants the trap
+    else if (myPlayer.abilityCard === 'SPOOF') { 
+      // Plants the trap on target (could be self)
       updates[`rooms/${gameState.code}/players/${targetId}/isScrambled`] = true;
-      
-      // Optional: Private System Message so the user knows it worked? 
-      // Or keep it totally silent so no one knows a Spoof happened? 
-      // Let's keep it silent to add to the paranoia.
     }
 
     await update(ref(db), updates);
@@ -243,7 +236,6 @@ export const useGame = () => {
     
     players.forEach(voter => {
       if (voter.votedFor && !voter.isSilenced) {
-        // We removed the "Shielded" check because Overload is gone
         votes[voter.votedFor] = (votes[voter.votedFor] || 0) + 1;
       }
     });
