@@ -1,5 +1,5 @@
 // src/components/LobbyScreen.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import type { Room } from '../types';
 
 interface LobbyScreenProps {
@@ -17,63 +17,33 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   onStartGame,
   onLeave 
 }) => {
-  const [copied, setCopied] = useState(false);
-  
   const playersList = Object.values(room.players);
   const currentPlayer = room.players[playerId];
   const isHost = currentPlayer?.isHost;
   
-  // Logic: Everyone must be ready, and there must be at least 3 players
   const canStart = playersList.length >= 3 && playersList.every(p => p.isReady);
-
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(room.code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className="flex flex-col h-full py-6 space-y-6 animate-in fade-in duration-500">
       
-      {/* 1. HEADER: ROOM INFO */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-6 relative group overflow-hidden">
+      {/* 1. HEADER: ROOM INFO (Compact Version) */}
+      <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 relative group overflow-hidden">
         {/* Glow effect */}
         <div className="absolute top-0 left-0 w-1 h-full bg-violet-500" />
         
-        <div className="flex justify-between items-start">
-          <div className="space-y-1">
-             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">
+        <div className="flex justify-between items-center">
+          <div>
+             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">
                Access Code
              </p>
-             
-             {/* Code + Copy Button */}
-             <div className="flex items-center gap-4">
-               <p className="text-5xl font-mono font-black text-white tracking-widest">
-                 {room.code}
-               </p>
-               
-               <button 
-                 onClick={handleCopyCode}
-                 className="p-2 rounded hover:bg-slate-800 transition-colors group/copy"
-                 title="Copy Code"
-               >
-                 {copied ? (
-                   <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider animate-in fade-in">
-                     COPIED
-                   </span>
-                 ) : (
-                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-slate-500 group-hover/copy:text-violet-400 transition-colors">
-                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.875.84-2.25 1.638m9.072-5.127c.22.685.337 1.409.337 2.15v5.333a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6a2.25 2.25 0 012.25-2.25h2.5M10.887 6.375a2.25 2.25 0 014.226 0" />
-                   </svg>
-                 )}
-               </button>
-             </div>
+             <p className="text-5xl font-mono font-black text-white tracking-widest leading-none">
+               {room.code}
+             </p>
           </div>
 
-          {/* Minimal Leave Button */}
           <button 
             onClick={onLeave} 
-            className="text-[10px] font-bold text-slate-600 hover:text-slate-300 uppercase tracking-widest transition-colors"
+            className="text-[10px] font-bold text-slate-600 hover:text-slate-300 uppercase tracking-widest transition-colors self-start"
           >
             LEAVE
           </button>
@@ -105,7 +75,6 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               >
                 {/* Left: Name & Host Icon */}
                 <div className="flex items-center gap-3">
-                  {/* Host Icon (Replaces the fat text badge) */}
                   {p.isHost ? (
                     <div className="text-violet-500" title="Mission Host">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -113,7 +82,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                       </svg>
                     </div>
                   ) : (
-                    <div className="w-4" /> // Spacer to keep alignment
+                    <div className="w-4" /> 
                   )}
                   
                   <span className={`text-sm font-bold tracking-wider uppercase ${isMe ? 'text-white' : 'text-slate-400'}`}>
@@ -121,7 +90,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   </span>
                 </div>
 
-                {/* Right: Status (Only text, no dots) */}
+                {/* Right: Status */}
                 <span className={`text-[10px] font-mono font-bold uppercase tracking-widest ${
                   p.isReady ? 'text-violet-400' : 'text-slate-700'
                 }`}>
@@ -141,8 +110,8 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
           onClick={onToggleReady}
           className={`w-full p-4 rounded-lg font-bold uppercase tracking-[0.2em] text-sm transition-all duration-200 ${
             currentPlayer?.isReady
-              ? 'bg-transparent border border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300' // State 2: Cancel
-              : 'bg-violet-600 hover:bg-violet-500 text-white shadow-[0_0_20px_rgba(124,58,237,0.2)]' // State 1: Ready
+              ? 'bg-transparent border border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'
+              : 'bg-violet-600 hover:bg-violet-500 text-white shadow-[0_0_20px_rgba(124,58,237,0.2)]'
           }`}
         >
           {currentPlayer?.isReady ? 'CANCEL' : 'READY'}
@@ -150,12 +119,14 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
         {/* Host Launch Button */}
         {isHost && (
-          <div className={`transition-all duration-500 ${canStart ? 'opacity-100' : 'opacity-30'}`}>
+          <div className="transition-all duration-500">
             <button
               disabled={!canStart}
               onClick={onStartGame}
               className={`group relative w-full overflow-hidden rounded-lg p-4 transition-all ${
-                !canStart ? 'cursor-not-allowed bg-slate-900 border border-slate-800' : ''
+                !canStart 
+                  ? 'cursor-not-allowed bg-slate-900/50 border-2 border-dashed border-slate-700' 
+                  : ''
               }`}
             >
               {canStart ? (
@@ -168,9 +139,9 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   </span>
                 </>
               ) : (
-                // Disabled State
+                // Disabled State (Waiting)
                 <div className="flex justify-center">
-                   <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">
+                   <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest font-bold">
                      WAITING FOR AGENTS...
                    </span>
                 </div>
