@@ -11,7 +11,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
   const [code, setCode] = useState('');
   const [mode, setMode] = useState<'JOIN' | 'CREATE'>('JOIN');
   
-  // NEW: Track if the hidden code input actually has focus
+  // Track focus to ensure we only highlight when the user is actually typing
   const [isCodeFocused, setIsCodeFocused] = useState(false);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,8 +93,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
                       maxLength={4}
                       value={code}
                       onChange={handleCodeChange}
-                      onFocus={() => setIsCodeFocused(true)} // TRACK FOCUS
-                      onBlur={() => setIsCodeFocused(false)}   // TRACK BLUR
+                      onFocus={() => setIsCodeFocused(true)}
+                      onBlur={() => setIsCodeFocused(false)}
                       autoComplete="off"
                     />
 
@@ -103,16 +103,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
                       {[0, 1, 2, 3].map((index) => {
                         const char = code[index] || "";
                         const isCurrentSlot = code.length === index;
-                        // FIX: Only show active state if it's the current slot AND the input is actually focused
                         const isActive = isCurrentSlot && isCodeFocused;
                         const isFilled = char !== "";
 
                         return (
                           <div
                             key={index}
+                            /* REMOVED scale-105 from the active state below */
                             className={`flex-1 flex items-center justify-center rounded-lg border-2 text-3xl font-mono font-bold transition-all duration-200 ${
                               isActive 
-                                ? "border-violet-500 bg-slate-800 shadow-[0_0_15px_rgba(139,92,246,0.2)] scale-105" 
+                                ? "border-violet-500 bg-slate-800 shadow-[0_0_15px_rgba(139,92,246,0.2)]" 
                                 : isFilled
                                   ? "border-slate-700 bg-slate-900 text-white"
                                   : "border-slate-800 bg-slate-950 text-slate-700"
@@ -120,12 +120,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
                           >
                             {char}
                             
-                            {/* Placeholder Line (Only if empty and NOT active) */}
+                            {/* Placeholder Line */}
                             {!isFilled && !isActive && (
                               <div className="w-4 h-1 bg-slate-800 rounded-full group-hover:bg-slate-700 transition-colors" />
                             )}
                             
-                            {/* Blinking Cursor (Only if TRULY active) */}
+                            {/* Blinking Cursor */}
                             {isActive && (
                                <div className="w-0.5 h-8 bg-violet-500 animate-pulse" />
                             )}
