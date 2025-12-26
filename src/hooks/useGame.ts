@@ -3,6 +3,7 @@ import { ref, set, update, onValue, get, child, remove } from 'firebase/database
 import { db } from '../services/firebase';
 import type { Room, Player, GamePhase, PlayerRole } from '../types';
 import { generateRoomCode, getStoredPlayerId } from '../utils/helpers';
+import { distributeGameRoles } from '../utils/gameLogic';
 
 export const useGame = () => {
   const [gameState, setGameState] = useState<Room | null>(null);
@@ -146,6 +147,43 @@ export const useGame = () => {
     await set(playerRef, !me.isReady);
   };
 
+  const startGame = async () => {
+    if (!gameState) return;
+    
+    setLoading(true);
+    try {
+      const { assignments, cardAssignments, majority, impostor } = distributeGameRoles(gameState.players);
+      
+      const updates: Record<string, any> = {};
+      
+      // Update Room State
+      updates[`rooms/${gameState.code}/phase`] = 'REVEAL';
+      updates[`rooms/${gameState.code}/majorityWord`] = majority;
+      updates[`rooms/${gameState.code}/impostorWord`] = impostor;
+      
+      // Update Each Player
+      Object.keys(gameState.players).forEach(pid => {
+        const roleData = assignments[pid];
+        updates[`rooms/${gameState.code}/players/${pid}/role`] = roleData.role;
+        updates[`rooms/${gameState.code}/players/${pid}/secretWord`] = roleData.word;
+        updates[`rooms/${gameState.code}/players/${pid}/abilityCard`] = cardAssignments[pid];
+        updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
+        updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
+        updates[`rooms/${gameState.code}/players/${pid}/votesReceived`] = 0;
+        updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
+        updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
+      });
+
+      // Atomic Update (All or nothing)
+      await update(ref(db), updates);
+
+    } catch (err) {
+      console.error("Failed to start game", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     gameState,
     playerId,
@@ -153,6 +191,7 @@ export const useGame = () => {
     error,
     createRoom,
     joinRoom,
+    startGame,
     leaveRoom,
     toggleReady,
     // We will add more specific game actions (vote, start game) in the next phase
