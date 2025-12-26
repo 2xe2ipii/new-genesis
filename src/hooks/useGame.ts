@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ref, set, update, onValue, get, remove, runTransaction } from 'firebase/database';
 import { db } from '../services/firebase';
-import type { Room, Player, PlayerRole } from '../types';
+import type { Room, Player } from '../types';
 import { generateRoomCode, getStoredPlayerId } from '../utils/helpers';
 import { distributeGameRoles } from '../utils/gameLogic';
 
