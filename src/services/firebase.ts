@@ -1,13 +1,15 @@
+// src/services/firebase.ts
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAKY_FRpVi0-Is1FRzvkXjB7_EdkKSVXeA",
-  authDomain: "new-genesis-e9317.firebaseapp.com",
-  projectId: "new-genesis-e9317",
-  storageBucket: "new-genesis-e9317.firebasestorage.app",
-  messagingSenderId: "482806102988",
-  appId: "1:482806102988:web:7461f54990480982d67b69"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DB_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
