@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ref, set, update, onValue, get, remove, runTransaction } from 'firebase/database';
+import { ref, set, update, onValue, get, remove, runTransaction, push } from 'firebase/database';
 import { db } from '../services/firebase';
 import type { Room, Player } from '../types';
 import { generateRoomCode, getStoredPlayerId } from '../utils/helpers';
@@ -17,7 +17,6 @@ export const useGame = () => {
     onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Firebase stores arrays as objects if keys are indices, or sometimes nulls.
         // Ensure arrays exist to prevent crashes
         if (!data.votesToSkipDiscussion) data.votesToSkipDiscussion = [];
         setGameState(data);
@@ -37,6 +36,8 @@ export const useGame = () => {
         id: playerId, name: playerName, isHost: true, isReady: false,
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
+        // @ts-ignore - Assuming type definition will be updated to include isScrambled
+        isScrambled: false 
       };
 
       const newRoom: Room = {
@@ -70,6 +71,8 @@ export const useGame = () => {
         id: playerId, name: playerName, isHost: false, isReady: false,
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
+        // @ts-ignore
+        isScrambled: false
       };
 
       await update(ref(db, `rooms/${code}/players/${playerId}`), newPlayer);
@@ -104,7 +107,7 @@ export const useGame = () => {
       updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 10 * 60 * 1000; // 10 Mins
       updates[`rooms/${gameState.code}/majorityWord`] = majority;
       updates[`rooms/${gameState.code}/impostorWord`] = impostor;
-      updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = []; // Reset skips
+      updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = []; 
 
       Object.keys(gameState.players).forEach(pid => {
         updates[`rooms/${gameState.code}/players/${pid}/role`] = assignments[pid].role;
@@ -112,6 +115,7 @@ export const useGame = () => {
         updates[`rooms/${gameState.code}/players/${pid}/abilityCard`] = cardAssignments[pid];
         updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
         updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
+        updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false; // Reset Scramble
         updates[`rooms/${gameState.code}/players/${pid}/votesReceived`] = 0;
         updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
         updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
@@ -126,35 +130,61 @@ export const useGame = () => {
   };
 
   // --- CARD LOGIC ---
-  const useCard = async (targetId: string): Promise<string> => {
-    if (!gameState) return "";
+  const useCard = async (targetId: string): Promise<void> => {
+    if (!gameState) return;
     
     const myPlayer = gameState.players[playerId];
     const targetPlayer = gameState.players[targetId];
-    if (!myPlayer.abilityCard || myPlayer.isCardUsed) return "";
+    if (!myPlayer.abilityCard || myPlayer.isCardUsed) return;
 
-    let resultMessage = "";
+    const updates: Record<string, any> = {};
 
-    // 1. Calculate Result locally
+    // 1. Mark Card as Used immediately
+    updates[`rooms/${gameState.code}/players/${playerId}/isCardUsed`] = true;
+
+    // 2. Handle Effects
     if (myPlayer.abilityCard === 'RADAR') {
-      const isThreat = ['SPY', 'TOURIST', 'JOKER'].includes(targetPlayer.role || '');
-      resultMessage = isThreat ? `THREAT DETECTED: ${targetPlayer.name}` : `SAFE: ${targetPlayer.name} is a Local.`;
+      // Logic: 
+      // SPY/TOURIST/JOKER = Threat (true)
+      // LOCAL = Safe (false)
+      const isActuallyThreat = ['SPY', 'TOURIST', 'JOKER'].includes(targetPlayer.role || '');
+      
+      // CHECK FOR SCRAMBLER TRAP
+      // @ts-ignore
+      const isScrambled = targetPlayer.isScrambled === true;
+      
+      // If scrambled, flip the result. If not, keep original.
+      const finalResultIsThreat = isScrambled ? !isActuallyThreat : isActuallyThreat;
+      const resultText = finalResultIsThreat ? `THREAT` : `SAFE`;
+
+      // If the trap was triggered, consume it (remove the scrambled status)
+      if (isScrambled) {
+        updates[`rooms/${gameState.code}/players/${targetId}/isScrambled`] = false;
+      }
+      
+      // BROADCAST MESSAGE
+      const msgRef = push(ref(db, `rooms/${gameState.code}/systemMessages`));
+      updates[`rooms/${gameState.code}/systemMessages/${msgRef.key}`] = {
+        type: 'RADAR_RESULT',
+        text: `SCAN RESULT: ${targetPlayer.name} is confirmed ${resultText}.`,
+        targetId: targetId, 
+        timestamp: Date.now()
+      };
     } 
-    else if (myPlayer.abilityCard === 'INTERCEPT') {
-      const wordToReveal = myPlayer.role === 'SPY' ? gameState.majorityWord : gameState.impostorWord;
-      resultMessage = `Intercepted Data: Starts with "${wordToReveal.charAt(0)}"`;
-    }
     else if (myPlayer.abilityCard === 'SILENCER') {
-      // FIX: Use 'set' instead of 'update' for boolean value
-      await set(ref(db, `rooms/${gameState.code}/players/${targetId}/isSilenced`), true);
-      resultMessage = `Silenced ${targetPlayer.name}. Their vote is now 0.`;
+      updates[`rooms/${gameState.code}/players/${targetId}/isSilenced`] = true;
+      // Silencer is silent. No system message.
+    }
+    else if (myPlayer.abilityCard === 'SPOOF') { // The "Dark Card"
+      // Plants the trap
+      updates[`rooms/${gameState.code}/players/${targetId}/isScrambled`] = true;
+      
+      // Optional: Private System Message so the user knows it worked? 
+      // Or keep it totally silent so no one knows a Spoof happened? 
+      // Let's keep it silent to add to the paranoia.
     }
 
-    // 2. Mark Card as Used
-    // FIX: Use 'set' instead of 'update' for boolean value
-    await set(ref(db, `rooms/${gameState.code}/players/${playerId}/isCardUsed`), true);
-    
-    return resultMessage;
+    await update(ref(db), updates);
   };
 
   // --- SKIP LOGIC ---
@@ -166,12 +196,14 @@ export const useGame = () => {
       if (!currentRoom) return;
       if (!currentRoom.votesToSkipDiscussion) currentRoom.votesToSkipDiscussion = [];
       
-      // Add me if not already in
-      if (!currentRoom.votesToSkipDiscussion.includes(playerId)) {
+      const idx = currentRoom.votesToSkipDiscussion.indexOf(playerId);
+      
+      if (idx !== -1) {
+        currentRoom.votesToSkipDiscussion.splice(idx, 1);
+      } else {
         currentRoom.votesToSkipDiscussion.push(playerId);
       }
 
-      // Check consensus
       const totalPlayers = Object.keys(currentRoom.players).length;
       if (currentRoom.votesToSkipDiscussion.length >= totalPlayers) {
         currentRoom.phase = 'VOTING';
@@ -184,7 +216,6 @@ export const useGame = () => {
   const castVote = async (targetId: string) => {
     if (!gameState) return;
     
-    // 1. Lock in the vote
     const updates: Record<string, any> = {};
     updates[`rooms/${gameState.code}/players/${playerId}/votedFor`] = targetId;
     updates[`rooms/${gameState.code}/players/${playerId}/isVoteLocked`] = true;
@@ -192,22 +223,14 @@ export const useGame = () => {
     await update(ref(db), updates);
   };
 
-  // Host-only check to see if everyone voted
   const checkVotingComplete = async () => {
-    // We check 'isHost' internally just to prevent 8 phones from writing to DB at once.
-    // To the user, it happens automatically.
     if (!gameState || !gameState.players[playerId].isHost) return;
     
     const players = Object.values(gameState.players);
     const totalVotes = players.filter(p => p.isVoteLocked).length;
     
-    // Only trigger if everyone has locked in and we are currently in VOTING
     if (totalVotes === players.length && gameState.phase === 'VOTING') {
-      
-      // FIX: Use 'set' instead of 'update' for a single string value
       await set(ref(db, `rooms/${gameState.code}/phase`), 'SUSPENSE');
-      
-      // Delay 3 seconds then calculate results
       setTimeout(() => calculateResults(), 3000);
     }
   };
@@ -218,14 +241,13 @@ export const useGame = () => {
     const players = Object.values(gameState.players);
     const votes: Record<string, number> = {};
     
-    // 1. Tally Votes (Respecting Silencer)
     players.forEach(voter => {
       if (voter.votedFor && !voter.isSilenced) {
+        // We removed the "Shielded" check because Overload is gone
         votes[voter.votedFor] = (votes[voter.votedFor] || 0) + 1;
       }
     });
 
-    // 2. Find Most Voted
     let maxVotes = 0;
     let mostVotedPlayerId: string | null = null;
     
@@ -234,22 +256,19 @@ export const useGame = () => {
         maxVotes = count;
         mostVotedPlayerId = pid;
       } else if (count === maxVotes) {
-        // Tie logic: If tie, no one is ejected, implies Locals lose or chaos.
         mostVotedPlayerId = null; 
       }
     });
 
-    // 3. Determine Winner
-    let winner: 'LOCALS' | 'SPY' | 'JOKER' = 'SPY'; // Spy wins by default if chaos
+    let winner: 'LOCALS' | 'SPY' | 'JOKER' = 'SPY'; 
     
     if (mostVotedPlayerId) {
       const victim = gameState.players[mostVotedPlayerId];
       if (victim.role === 'SPY') winner = 'LOCALS';
       else if (victim.role === 'JOKER') winner = 'JOKER';
-      else winner = 'SPY'; // Locals voted for a Local/Tourist
+      else winner = 'SPY'; 
     }
 
-    // 4. Update DB
     const updates: Record<string, any> = {};
     updates[`rooms/${gameState.code}/winner`] = winner;
     updates[`rooms/${gameState.code}/phase`] = 'RESULTS';
@@ -259,13 +278,11 @@ export const useGame = () => {
 
   const returnToLobby = async () => {
      if (!gameState) return;
-     // Reset game data but keep players
      const updates: Record<string, any> = {};
      updates[`rooms/${gameState.code}/phase`] = 'LOBBY';
      updates[`rooms/${gameState.code}/winner`] = null;
      updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
      
-     // Reset player states
      Object.keys(gameState.players).forEach(pid => {
        updates[`rooms/${gameState.code}/players/${pid}/isReady`] = false;
        updates[`rooms/${gameState.code}/players/${pid}/role`] = null;
@@ -273,6 +290,7 @@ export const useGame = () => {
        updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
        updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
        updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
+       updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false;
      });
      
      await update(ref(db), updates);

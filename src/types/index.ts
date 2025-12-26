@@ -1,3 +1,5 @@
+// src/types/index.ts
+
 // --- 1. ENUMS & CONSTANTS ---
 
 export type PlayerRole = 
@@ -7,9 +9,9 @@ export type PlayerRole =
   | 'JOKER';   // Wants to be voted out
 
 export type AbilityCard = 
-  | 'INTERCEPT' // Reveal first letter of enemy word
   | 'RADAR'     // Scan alignment (Safe/Threat)
   | 'SILENCER'  // Nullify a player's vote
+  | 'SPOOF'     // The new Dark Card (Replaces Overload)
   | null;       // Player might not have a card (or used it)
 
 export type GamePhase = 
@@ -22,6 +24,13 @@ export type GamePhase =
   | 'RESULTS';       // Winner declaration & Role reveal
 
 // --- 2. CORE ENTITIES ---
+
+export interface SystemMessage {
+  type: string;        // e.g., 'RADAR_RESULT', 'SPOOF_ACTIVATE'
+  text: string;        // The message to display
+  targetId: string | null; // Who was targeted (optional)
+  timestamp: number;   // For sorting
+}
 
 export interface Player {
   id: string;          // Unique device ID or socket ID
@@ -45,6 +54,7 @@ export interface Player {
   
   // Status Effects
   isSilenced: boolean;      // If true, their vote counts as 0
+  isScrambled?: boolean;    // NEW: If true, Radar results are inverted
 }
 
 export interface Room {
@@ -61,14 +71,16 @@ export interface Room {
   impostorWord: string;
   
   // Dynamic Game Data
-  votesToSkipDiscussion: string[]; // List of player IDs who want to skip to voting
+  votesToSkipDiscussion: string[]; 
   winner: 'LOCALS' | 'SPY' | 'JOKER' | null;
+  
+  // NEW: System Message Feed
+  systemMessages?: Record<string, SystemMessage>;
 }
 
 // --- 3. PROPS & UTILS ---
 
-// Helper for our Scratch Card component later
 export interface ScratchCardProps {
-  content: string;      // The word or role to reveal
-  onReveal: () => void; // Trigger when scratched enough
+  content: string;      
+  onReveal: () => void; 
 }

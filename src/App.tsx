@@ -89,8 +89,7 @@ function App() {
   }, [error, clearError]);
 
   const handleUseCard = async (targetId: string) => {
-    const result = await useCard(targetId);
-    if (result) setCardResult(result);
+    await useCard(targetId);
   };
 
   return (
