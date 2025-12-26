@@ -148,20 +148,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
             /* CREATE FLOW */
             <div className="space-y-4 py-2 animate-in slide-in-from-bottom-2 fade-in duration-300">
             
-            {/* Terminal-style Info Box */}
-            <div className="p-4 bg-slate-950 border-l-2 border-violet-500 rounded-r-lg shadow-inner shadow-black/50">
-              <div className="flex gap-3">
-                <span className="text-violet-500 font-mono animate-pulse">_</span>
-                <p className="text-violet-200/80 text-[10px] font-mono leading-relaxed tracking-wide">
-                  <span className="text-violet-500 font-bold block mb-1">SYSTEM ALERT</span>
-                  USER WILL BE ASSIGNED <strong className="text-white">HOST</strong> PRIVILEGES.
-                  <br/>
-                  DISTRIBUTE ACCESS CODE TO OPERATIVES.
-                </p>
-              </div>
+            {/* Simple, Readable Info Box (Monospace for 'System' feel) */}
+            <div className="p-4 border border-violet-500/20 bg-violet-500/5 rounded-lg">
+              <p className="text-violet-200/80 text-[10px] text-center leading-relaxed font-mono uppercase tracking-wide">
+                You will be assigned as <strong className="text-white font-bold">Host</strong>.
+                <br/>
+                Share the access code with up to 8 agents.
+              </p>
             </div>
 
-            {/* "Tech" Style Button */}
+            {/* "Tech" Style Button - Cleaned Up */}
             <button
               disabled={!name || loading}
               onClick={() => onCreate(name)}
@@ -174,22 +170,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
               <div className="absolute inset-0 bg-violet-500/0 group-hover:bg-violet-500/10 transition-colors duration-300" />
               
               {/* Content */}
-              <div className="relative z-10 flex items-center justify-center gap-3">
+              <div className="relative z-10 flex items-center justify-center">
                  {loading ? (
                    <span className="font-mono font-bold text-violet-300 tracking-widest text-sm animate-pulse">
                      INITIALIZING...
                    </span>
                  ) : (
-                   <>
-                     {/* Decorative Icon */}
-                     <div className="w-1.5 h-1.5 bg-violet-500 rounded-full group-hover:shadow-[0_0_10px_rgba(139,92,246,1)] transition-shadow" />
-                     
-                     <span className="font-bold text-violet-300 group-hover:text-white tracking-[0.2em] text-sm transition-colors">
-                       GENERATE PROTOCOL
-                     </span>
-                     
-                     <div className="w-1.5 h-1.5 bg-violet-500 rounded-full group-hover:shadow-[0_0_10px_rgba(139,92,246,1)] transition-shadow" />
-                   </>
+                   <span className="font-mono font-bold text-violet-300 group-hover:text-white tracking-[0.2em] text-sm transition-colors">
+                     GENERATE PROTOCOL
+                   </span>
                  )}
               </div>
             </button>
