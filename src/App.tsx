@@ -1,5 +1,5 @@
 // src/App.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGame } from './hooks/useGame';
 import { Layout } from './components/Layout';
 import { WelcomeScreen } from './components/WelcomeScreen';
@@ -8,11 +8,38 @@ import { DiscussionScreen } from './components/DiscussionScreen';
 import { VotingScreen } from './components/VotingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 
-// Simple Modal Component for Card Results (Internal Component)
+// Internal Component: System Alert Toast
+const SystemAlert = ({ message, onDismiss }: { message: string; onDismiss: () => void }) => (
+  <div 
+    onClick={onDismiss}
+    className="fixed top-6 left-1/2 -translate-x-1/2 z-50 cursor-pointer animate-in slide-in-from-top-4 fade-in duration-300 w-full max-w-sm px-4"
+  >
+    <div className="flex items-center gap-4 bg-slate-900/95 border border-red-500/30 text-red-100 px-6 py-4 rounded-lg shadow-[0_0_30px_rgba(220,38,38,0.25)] backdrop-blur-md hover:bg-slate-900 transition-colors group">
+      {/* Icon */}
+      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-500/10 text-red-500 group-hover:bg-red-500/20 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+          <path fillRule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+        </svg>
+      </div>
+      
+      {/* Text */}
+      <div className="flex-1">
+        <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-0.5">System Error</p>
+        <p className="text-sm font-medium text-red-100">{message}</p>
+      </div>
+
+      {/* Dismiss Hint */}
+      <div className="h-full w-px bg-red-500/20 mx-2" />
+      <span className="text-xs font-bold text-red-500 opacity-50 group-hover:opacity-100">X</span>
+    </div>
+  </div>
+);
+
+// Internal Component: Card Result Modal
 const CardResultModal = ({ message, onClose }: { message: string, onClose: () => void }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 animate-in fade-in duration-200">
-    <div className="bg-slate-800 border-2 border-purple-500 w-full max-w-sm p-6 rounded-2xl shadow-2xl shadow-purple-900/50">
-      <h3 className="text-purple-400 font-bold uppercase tracking-widest text-xs mb-2">System Alert</h3>
+    <div className="bg-slate-800 border-2 border-violet-500 w-full max-w-sm p-6 rounded-2xl shadow-2xl shadow-violet-900/50">
+      <h3 className="text-violet-400 font-bold uppercase tracking-widest text-xs mb-2">System Alert</h3>
       <p className="text-xl font-bold text-white mb-6 font-mono leading-relaxed">{message}</p>
       <button 
         onClick={onClose}
@@ -29,7 +56,7 @@ function App() {
     gameState, 
     playerId, 
     loading, 
-    error,
+    error, // The raw error from the hook
     createRoom, 
     joinRoom, 
     leaveRoom, 
@@ -43,8 +70,21 @@ function App() {
   } = useGame();
 
   const [cardResult, setCardResult] = useState<string | null>(null);
+  
+  // Local state to manage the visual visibility of the error
+  const [displayedError, setDisplayedError] = useState<string | null>(null);
 
-  // Wrapper to handle async card result and show modal
+  // Effect: When a new error arrives, show it, then auto-hide after 3s
+  useEffect(() => {
+    if (error) {
+      setDisplayedError(error);
+      const timer = setTimeout(() => {
+        setDisplayedError(null);
+      }, 3000); // 3 Seconds Timeout
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const handleUseCard = async (targetId: string) => {
     const result = await useCard(targetId);
     if (result) setCardResult(result);
@@ -52,11 +92,12 @@ function App() {
 
   return (
     <Layout>
-      {/* 1. Global Error Toast */}
-      {error && (
-        <div className="absolute top-4 left-4 right-4 bg-red-500/90 text-white p-3 rounded-lg text-sm font-bold text-center z-50 animate-bounce shadow-lg">
-          {error}
-        </div>
+      {/* 1. Global System Alert (Replaces the old red block) */}
+      {displayedError && (
+        <SystemAlert 
+          message={displayedError} 
+          onDismiss={() => setDisplayedError(null)} 
+        />
       )}
 
       {/* 2. Global Card Result Modal */}
@@ -83,7 +124,6 @@ function App() {
             />
           )}
 
-          {/* Reveal is technically part of Discussion flow now, handled inside DiscussionScreen */}
           {(gameState.phase === 'DISCUSSION' || gameState.phase === 'REVEAL') && (
             <DiscussionScreen 
                room={gameState}
