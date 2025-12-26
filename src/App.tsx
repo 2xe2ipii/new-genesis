@@ -1,35 +1,61 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.tsx
+import { useGame } from './hooks/useGame';
+import { Layout } from './components/Layout';
+import { WelcomeScreen } from './components/WelcomeScreen';
+import { LobbyScreen } from './components/LobbyScreen';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { 
+    gameState, 
+    playerId, 
+    loading, 
+    error,
+    createRoom, 
+    joinRoom, 
+    leaveRoom,
+    toggleReady 
+  } = useGame();
+
+  // Simple handler for starting the game (Placeholder for now)
+  const handleStartGame = () => {
+    console.log("Starting game... logic comes in Phase 4");
+    // We will add the startGame function to useGame hook in the next phase
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Layout>
+      {error && (
+        <div className="absolute top-4 left-4 right-4 bg-red-500/90 text-white p-3 rounded-lg text-sm font-bold text-center z-50 animate-bounce">
+          {error}
+        </div>
+      )}
+
+      {!gameState ? (
+        <WelcomeScreen 
+          onCreate={createRoom} 
+          onJoin={joinRoom} 
+          loading={loading}
+        />
+      ) : (
+        gameState.phase === 'LOBBY' && (
+          <LobbyScreen 
+            room={gameState}
+            playerId={playerId}
+            onToggleReady={toggleReady}
+            onStartGame={handleStartGame}
+            onLeave={leaveRoom}
+          />
+        )
+      )}
+      
+      {/* This is where we will add:
+        gameState.phase === 'ASSIGNING' && <AnimationScreen />
+        gameState.phase === 'REVEAL' && <RevealScreen />
+        etc.
+      */}
+      
+    </Layout>
+  );
 }
 
-export default App
+export default App;
