@@ -36,16 +36,36 @@ export const distributeGameRoles = (players: Record<string, Player>) => {
   }
 
   // 3. Distribute Cards (Limit 3 cards total)
-  // We shuffle again so the Spy/Joker might also get cards
-  const shuffledForCards = [...playerIds].sort(() => Math.random() - 0.5);
   const cardAssignments: Record<string, AbilityCard> = {};
   
   // Initialize everyone with null first
   playerIds.forEach(id => cardAssignments[id] = null);
 
-  if (shuffledForCards.length > 0) cardAssignments[shuffledForCards.pop()!] = 'INTERCEPT';
-  if (shuffledForCards.length > 0) cardAssignments[shuffledForCards.pop()!] = 'RADAR';
-  if (shuffledForCards.length > 0) cardAssignments[shuffledForCards.pop()!] = 'SILENCER';
+  // Identify Threats to potentially receive SPOOF
+  const threatIds = playerIds.filter(id => 
+    ['SPY', 'JOKER', 'TOURIST'].includes(assignments[id].role)
+  );
+
+  // Pool of players available for Standard Cards (initially everyone)
+  let availableForStandardCards = [...playerIds];
+
+  // A. Assign SPOOF (Only to a Threat)
+  // We pick one random threat to hold the Spoof card
+  if (threatIds.length > 0) {
+    const randomThreatIndex = Math.floor(Math.random() * threatIds.length);
+    const spooferId = threatIds[randomThreatIndex];
+    
+    cardAssignments[spooferId] = 'SPOOF';
+    
+    // Remove the Spoofer from the pool so they don't get a second card
+    availableForStandardCards = availableForStandardCards.filter(id => id !== spooferId);
+  }
+
+  // B. Assign RADAR and SILENCER (To anyone remaining in the pool)
+  const shuffledOthers = availableForStandardCards.sort(() => Math.random() - 0.5);
+
+  if (shuffledOthers.length > 0) cardAssignments[shuffledOthers.pop()!] = 'RADAR';
+  if (shuffledOthers.length > 0) cardAssignments[shuffledOthers.pop()!] = 'SILENCER';
 
   return {
     assignments,

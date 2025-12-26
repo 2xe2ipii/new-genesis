@@ -1,3 +1,4 @@
+// src/components/DiscussionScreen.tsx
 import React, { useState } from 'react';
 import type { Room, AbilityCard } from '../types';
 import { useTimer } from '../hooks/useTimer';
@@ -47,7 +48,6 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
 
   const handlePlayerTap = (targetId: string) => {
     if (isTargeting) {
-        // Can target anyone (including self) depending on strategy
         onUseCard(targetId);
         setIsTargeting(false);
     }
@@ -78,7 +78,7 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
          ),
          label: "SILENCE VOTE"
       };
-      case 'SPOOF': return { // The New Dark Card
+      case 'SPOOF': return { 
          icon: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M13.5 2c-1.355 0-2.697.056-4.024.166-.41.034-.824.08-1.237.139a3.75 3.75 0 00-3.328 3.328c-.06.413-.106.827-.139 1.237-.11 1.327-.166 2.67-.166 4.024a.75.75 0 01-1.5 0c0-1.416.06-2.822.176-4.212.04-.48.093-.956.16-1.427A5.25 5.25 0 018.667.667c.471-.067.947-.12 1.427-.16C11.508.396 12.914.336 14.33.336a.75.75 0 010 1.5.75.75 0 01-.83.164zM20.25 12a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5a.75.75 0 01.75.75zM3.75 12a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5a.75.75 0 01.75.75zM12 20.25a.75.75 0 01-.75.75v1.5a.75.75 0 011.5 0v-1.5a.75.75 0 01-.75-.75zM15 15.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
          color: 'text-purple-400',
          border: 'border-purple-500',
@@ -152,23 +152,42 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
         <div className="grid grid-cols-3 gap-3">
           {playersList.map(p => {
             const isMe = p.id === me.id;
-            const isValidTarget = isTargeting; // Anyone can be targeted by any card now
             
+            // Logic: Determine who is interactive based on the active card rules
+            let isInteractable = false;
+
+            if (isTargeting) {
+               if (me.abilityCard === 'SILENCER' && isMe) {
+                 // Silencer cannot silence self
+                 isInteractable = false; 
+               } else if (me.abilityCard === 'RADAR' && isMe) {
+                 // Radar cannot scan self
+                 isInteractable = false;
+               } else {
+                 // Spoof can target anyone (including self).
+                 // Other cards (if added later) default to true for now.
+                 isInteractable = true;
+               }
+            } else {
+               // When not targeting, buttons are just for show/status
+               isInteractable = isMe;
+            }
+
             return (
               <button
                 key={p.id}
-                disabled={!isValidTarget && !isMe} 
+                disabled={!isInteractable && !isMe} 
                 onClick={() => handlePlayerTap(p.id)}
                 className={`relative aspect-square rounded-lg flex flex-col items-center justify-center p-2 transition-all duration-300 border ${
                   isMe 
                     ? 'bg-slate-800 border-slate-600 opacity-100' 
-                    : isValidTarget
+                    : isTargeting && isInteractable
                       ? `${cardConfig?.bg}/30 ${cardConfig?.border} shadow-[0_0_15px_rgba(0,0,0,0.5)] cursor-pointer animate-pulse scale-95` 
                       : 'bg-slate-900/50 border-slate-800 opacity-60' 
                 }`}
               >
                 {/* Name */}
-                <span className={`text-xs font-black uppercase truncate w-full text-center tracking-wider ${isValidTarget ? cardConfig?.color : 'text-slate-300'}`}>
+                <span className={`text-xs font-black uppercase truncate w-full text-center tracking-wider ${isTargeting && isInteractable ? cardConfig?.color : 'text-slate-300'}`}>
                   {p.name}
                 </span>
 
@@ -177,7 +196,7 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
                 {p.isSilenced && <span className="absolute top-1 right-1 text-rose-500">🔇</span>}
 
                 {/* Dynamic Target Overlay */}
-                {isValidTarget && cardConfig && (
+                {isTargeting && isInteractable && cardConfig && (
                    <div className={`absolute inset-0 flex items-center justify-center pointer-events-none ${cardConfig.color} opacity-80`}>
                      {cardConfig.targetIcon}
                    </div>
