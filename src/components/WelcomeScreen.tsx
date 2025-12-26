@@ -9,7 +9,13 @@ interface WelcomeScreenProps {
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, loading }) => {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
-  const [mode, setMode] = useState<'JOIN' | 'CREATE'>('JOIN'); // simple local toggle to clean up UI
+  const [mode, setMode] = useState<'JOIN' | 'CREATE'>('JOIN');
+
+  // Helper to ensure code is always uppercase and max 4 chars
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+    setCode(val);
+  };
 
   return (
     <div className="flex flex-col justify-center h-full max-w-sm mx-auto w-full animate-in fade-in duration-700">
@@ -41,7 +47,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
           />
         </div>
 
-        {/* MODE SWITCHER (Subtle Tabs) */}
+        {/* MODE SWITCHER */}
         <div className="grid grid-cols-2 gap-1 p-1 bg-slate-900/50 rounded-lg border border-slate-800/50">
           <button
             onClick={() => setMode('JOIN')}
@@ -75,14 +81,51 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">
                    Access Code
                  </label>
-                 <input
-                   type="text"
-                   placeholder="____"
-                   maxLength={4}
-                   className="w-full bg-slate-950 border border-slate-800 text-white text-3xl p-4 rounded-lg font-mono text-center tracking-[0.5em] focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/20 transition-all uppercase placeholder:text-slate-800"
-                   value={code}
-                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                 />
+                 
+                 {/* SEGMENTED INPUT CONTAINER */}
+                 <div className="relative h-16 w-full">
+                    {/* The Invisible Real Input */}
+                    <input
+                      type="text"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-transparent z-20"
+                      maxLength={4}
+                      value={code}
+                      onChange={handleCodeChange}
+                      autoComplete="off"
+                    />
+
+                    {/* The Visual Slots */}
+                    <div className="absolute inset-0 flex justify-between gap-2 z-10 pointer-events-none">
+                      {[0, 1, 2, 3].map((index) => {
+                        const char = code[index] || "";
+                        const isActive = code.length === index;
+                        const isFilled = char !== "";
+
+                        return (
+                          <div
+                            key={index}
+                            className={`flex-1 flex items-center justify-center rounded-lg border-2 text-3xl font-mono font-bold transition-all duration-200 ${
+                              isActive 
+                                ? "border-violet-500 bg-slate-800 shadow-[0_0_15px_rgba(139,92,246,0.2)] scale-105" 
+                                : isFilled
+                                  ? "border-slate-700 bg-slate-900 text-white"
+                                  : "border-slate-800 bg-slate-950 text-slate-700"
+                            }`}
+                          >
+                            {char}
+                            {/* Placeholder Line for empty slots */}
+                            {!isFilled && !isActive && (
+                              <div className="w-4 h-1 bg-slate-800 rounded-full" />
+                            )}
+                            {/* Blinking Cursor for active slot */}
+                            {isActive && (
+                               <div className="w-0.5 h-8 bg-violet-500 animate-pulse" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                 </div>
               </div>
               
               <button
@@ -117,7 +160,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
 
       </div>
 
-      {/* FOOTER DECORATION */}
       <div className="mt-12 flex justify-center opacity-20">
          <div className="h-1 w-12 bg-slate-700 rounded-full" />
       </div>
