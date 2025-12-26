@@ -82,7 +82,7 @@ export const VotingScreen: React.FC<VotingScreenProps> = ({ room, playerId, onVo
                       </span>
                       {p.isSilenced && (
                         <span className="text-[8px] text-rose-500 font-bold tracking-widest animate-pulse">
-                          [VOICE_DISABLED]
+                          [SILENCED_KA_BOI]
                         </span>
                       )}
                    </div>
