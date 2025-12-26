@@ -1,6 +1,6 @@
 // src/components/DiscussionScreen.tsx
 import React, { useState } from 'react';
-import type { Player, Room } from '../types';
+import type { Room } from '../types';
 import { useTimer } from '../hooks/useTimer';
 import { RevealScreen } from './RevealScreen';
 
@@ -18,7 +18,7 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
   onVoteToSkip 
 }) => {
   const [hasRevealed, setHasRevealed] = useState(false);
-  const { minutes, seconds, isExpired } = useTimer(room.timerEndTime);
+  const { minutes, seconds } = useTimer(room.timerEndTime);
   const me = room.players[playerId];
   const playersList = Object.values(room.players);
 
