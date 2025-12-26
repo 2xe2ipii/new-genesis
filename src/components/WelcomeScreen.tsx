@@ -147,22 +147,53 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
           ) : (
             /* CREATE FLOW */
             <div className="space-y-4 py-2 animate-in slide-in-from-bottom-2 fade-in duration-300">
-              <div className="p-4 border border-violet-900/30 bg-violet-900/10 rounded-lg">
-                <p className="text-violet-300 text-xs text-center leading-relaxed">
-                  You will be assigned as <strong className="text-white">Host</strong>.
+            
+            {/* Terminal-style Info Box */}
+            <div className="p-4 bg-slate-950 border-l-2 border-violet-500 rounded-r-lg shadow-inner shadow-black/50">
+              <div className="flex gap-3">
+                <span className="text-violet-500 font-mono animate-pulse">_</span>
+                <p className="text-violet-200/80 text-[10px] font-mono leading-relaxed tracking-wide">
+                  <span className="text-violet-500 font-bold block mb-1">SYSTEM ALERT</span>
+                  USER WILL BE ASSIGNED <strong className="text-white">HOST</strong> PRIVILEGES.
                   <br/>
-                  Share the access code with up to 8 other agents.
+                  DISTRIBUTE ACCESS CODE TO OPERATIVES.
                 </p>
               </div>
-
-              <button
-                disabled={!name || loading}
-                onClick={() => onCreate(name)}
-                className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-violet-500/50 text-violet-400 p-4 rounded-lg font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-              >
-                {loading ? 'Initializing...' : 'Generate Protocol'}
-              </button>
             </div>
+
+            {/* "Tech" Style Button */}
+            <button
+              disabled={!name || loading}
+              onClick={() => onCreate(name)}
+              className="group relative w-full overflow-hidden rounded-lg p-4 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {/* Background Layer (Dark with Border) */}
+              <div className="absolute inset-0 bg-slate-900 border border-violet-500/50 group-hover:border-violet-400 transition-colors" />
+              
+              {/* Hover Glow Effect */}
+              <div className="absolute inset-0 bg-violet-500/0 group-hover:bg-violet-500/10 transition-colors duration-300" />
+              
+              {/* Content */}
+              <div className="relative z-10 flex items-center justify-center gap-3">
+                 {loading ? (
+                   <span className="font-mono font-bold text-violet-300 tracking-widest text-sm animate-pulse">
+                     INITIALIZING...
+                   </span>
+                 ) : (
+                   <>
+                     {/* Decorative Icon */}
+                     <div className="w-1.5 h-1.5 bg-violet-500 rounded-full group-hover:shadow-[0_0_10px_rgba(139,92,246,1)] transition-shadow" />
+                     
+                     <span className="font-bold text-violet-300 group-hover:text-white tracking-[0.2em] text-sm transition-colors">
+                       GENERATE PROTOCOL
+                     </span>
+                     
+                     <div className="w-1.5 h-1.5 bg-violet-500 rounded-full group-hover:shadow-[0_0_10px_rgba(139,92,246,1)] transition-shadow" />
+                   </>
+                 )}
+              </div>
+            </button>
+          </div>
           )}
         </div>
 
