@@ -56,7 +56,7 @@ function App() {
     gameState, 
     playerId, 
     loading, 
-    error, // The raw error from the hook
+    error, 
     createRoom, 
     joinRoom, 
     leaveRoom, 
@@ -66,7 +66,8 @@ function App() {
     voteToSkip,
     castVote,
     checkVotingComplete,
-    returnToLobby
+    returnToLobby,
+    clearError // 1. Destructure the new function
   } = useGame();
 
   const [cardResult, setCardResult] = useState<string | null>(null);
@@ -74,16 +75,18 @@ function App() {
   // Local state to manage the visual visibility of the error
   const [displayedError, setDisplayedError] = useState<string | null>(null);
 
-  // Effect: When a new error arrives, show it, then auto-hide after 3s
+  // 2. The Fix: Consume and Clear
   useEffect(() => {
     if (error) {
-      setDisplayedError(error);
+      setDisplayedError(error); // Show it locally
+      clearError(); // Clear it from the hook immediately so the next error triggers a change
+      
       const timer = setTimeout(() => {
         setDisplayedError(null);
-      }, 3000); // 3 Seconds Timeout
+      }, 3000); 
       return () => clearTimeout(timer);
     }
-  }, [error]);
+  }, [error, clearError]);
 
   const handleUseCard = async (targetId: string) => {
     const result = await useCard(targetId);
@@ -92,7 +95,7 @@ function App() {
 
   return (
     <Layout>
-      {/* 1. Global System Alert (Replaces the old red block) */}
+      {/* Global System Alert */}
       {displayedError && (
         <SystemAlert 
           message={displayedError} 
@@ -100,12 +103,12 @@ function App() {
         />
       )}
 
-      {/* 2. Global Card Result Modal */}
+      {/* Global Card Result Modal */}
       {cardResult && (
         <CardResultModal message={cardResult} onClose={() => setCardResult(null)} />
       )}
 
-      {/* 3. Main Routing Logic */}
+      {/* Main Routing Logic */}
       {!gameState ? (
         <WelcomeScreen 
           onCreate={createRoom} 

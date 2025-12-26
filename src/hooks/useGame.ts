@@ -278,10 +278,13 @@ export const useGame = () => {
      await update(ref(db), updates);
   };
 
+  const clearError = () => setError(null);
+
   return {
     gameState, playerId, loading, error,
     createRoom, joinRoom, leaveRoom, toggleReady,
     startGame, useCard, voteToSkip,
-    castVote, checkVotingComplete, returnToLobby
+    castVote, checkVotingComplete, returnToLobby,
+    clearError
   };
 };
