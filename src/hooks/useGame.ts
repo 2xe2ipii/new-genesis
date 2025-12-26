@@ -59,7 +59,7 @@ export const useGame = () => {
     const code = roomCode.toUpperCase();
     try {
       const snapshot = await get(ref(db, `rooms/${code}`));
-      if (!snapshot.exists()) throw new Error('Room not found');
+      if (!snapshot.exists()) throw new Error('404 Not Found');
       
       const roomData = snapshot.val();
       if (roomData.phase !== 'LOBBY' && !roomData.players[playerId]) {
