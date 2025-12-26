@@ -1,6 +1,6 @@
 // src/components/LobbyScreen.tsx
 import React from 'react';
-import type { Player, Room } from '../types';
+import type { Room } from '../types';
 
 interface LobbyScreenProps {
   room: Room;
