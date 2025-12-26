@@ -134,21 +134,23 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
           </AnimatePresence>
         </div>
 
-        {/* FOOTER: BURN BUTTON */}
-        <div className="mt-12">
+        {/* FOOTER: SYSTEM ACTION BAR */}
+        <div className="mt-10">
           {isRevealed && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={onReadyToDiscuss}
-              className="w-full group relative overflow-hidden bg-slate-900 border border-slate-700 hover:border-red-500/50 hover:bg-red-950/10 p-4 transition-all duration-300"
+              // A wide, bordered bar that looks like a UI element, not just text, but fits the terminal theme.
+              className="w-full py-4 border-y border-slate-700 bg-slate-900/50 hover:bg-slate-800 hover:border-slate-500 text-slate-400 hover:text-white transition-all flex items-center justify-between px-4 group"
             >
-              <div className="flex items-center justify-center gap-2">
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                <span className="font-mono font-bold text-slate-400 group-hover:text-red-400 uppercase tracking-[0.2em] text-sm">
-                  BURN MESSAGE
-                </span>
-              </div>
+              <span className="text-xs opacity-50 group-hover:opacity-100">{`[ 001 ]`}</span>
+              
+              <span className="font-mono text-xs uppercase tracking-[0.2em] font-bold">
+                 ACKNOWLEDGE_&_BURN
+              </span>
+              
+              <span className="text-xs opacity-50 group-hover:opacity-100">{`[ END ]`}</span>
             </motion.button>
           )}
         </div>
