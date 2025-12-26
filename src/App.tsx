@@ -3,6 +3,7 @@ import { useGame } from './hooks/useGame';
 import { Layout } from './components/Layout';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { LobbyScreen } from './components/LobbyScreen';
+import { RevealScreen } from './components/RevealScreen';
 
 function App() {
   const { 

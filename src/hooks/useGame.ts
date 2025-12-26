@@ -157,7 +157,7 @@ export const useGame = () => {
       const updates: Record<string, any> = {};
       
       // Update Room State
-      updates[`rooms/${gameState.code}/phase`] = 'REVEAL';
+      updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
       updates[`rooms/${gameState.code}/majorityWord`] = majority;
       updates[`rooms/${gameState.code}/impostorWord`] = impostor;
       
