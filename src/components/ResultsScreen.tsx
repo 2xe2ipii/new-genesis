@@ -1,7 +1,7 @@
 // src/components/ResultsScreen.tsx
 import React, { useEffect, useState } from 'react';
 import type { Room, PlayerRole } from '../types';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface ResultsScreenProps {
   room: Room;

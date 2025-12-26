@@ -194,14 +194,18 @@ export const useGame = () => {
 
   // Host-only check to see if everyone voted
   const checkVotingComplete = async () => {
+    // We check 'isHost' internally just to prevent 8 phones from writing to DB at once.
+    // To the user, it happens automatically.
     if (!gameState || !gameState.players[playerId].isHost) return;
     
     const players = Object.values(gameState.players);
     const totalVotes = players.filter(p => p.isVoteLocked).length;
     
+    // Only trigger if everyone has locked in and we are currently in VOTING
     if (totalVotes === players.length && gameState.phase === 'VOTING') {
-      // Move to Suspense Phase automatically
-      await update(ref(db, `rooms/${gameState.code}/phase`), 'SUSPENSE');
+      
+      // FIX: Use 'set' instead of 'update' for a single string value
+      await set(ref(db, `rooms/${gameState.code}/phase`), 'SUSPENSE');
       
       // Delay 3 seconds then calculate results
       setTimeout(() => calculateResults(), 3000);
@@ -230,20 +234,19 @@ export const useGame = () => {
         maxVotes = count;
         mostVotedPlayerId = pid;
       } else if (count === maxVotes) {
-        // Tie handling: For this MVP, if tie, nobody dies? Or random? 
-        // Let's say: Tie = Locals Lose (Chaos ensues).
+        // Tie logic: If tie, no one is ejected, implies Locals lose or chaos.
         mostVotedPlayerId = null; 
       }
     });
 
     // 3. Determine Winner
-    let winner: 'LOCALS' | 'SPY' | 'JOKER' = 'SPY'; // Default Spy wins if confusion
+    let winner: 'LOCALS' | 'SPY' | 'JOKER' = 'SPY'; // Spy wins by default if chaos
     
     if (mostVotedPlayerId) {
       const victim = gameState.players[mostVotedPlayerId];
       if (victim.role === 'SPY') winner = 'LOCALS';
       else if (victim.role === 'JOKER') winner = 'JOKER';
-      else winner = 'SPY'; // They voted a Local or Tourist
+      else winner = 'SPY'; // Locals voted for a Local/Tourist
     }
 
     // 4. Update DB
