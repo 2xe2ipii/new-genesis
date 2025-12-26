@@ -135,23 +135,24 @@ export const useGame = () => {
 
     let resultMessage = "";
 
-    // 1. Calculate Result locally (safe enough for beach game)
+    // 1. Calculate Result locally
     if (myPlayer.abilityCard === 'RADAR') {
       const isThreat = ['SPY', 'TOURIST', 'JOKER'].includes(targetPlayer.role || '');
       resultMessage = isThreat ? `THREAT DETECTED: ${targetPlayer.name}` : `SAFE: ${targetPlayer.name} is a Local.`;
     } 
     else if (myPlayer.abilityCard === 'INTERCEPT') {
-      // If I am Spy, I want majority word. If I am Local, I want Impostor word.
       const wordToReveal = myPlayer.role === 'SPY' ? gameState.majorityWord : gameState.impostorWord;
       resultMessage = `Intercepted Data: Starts with "${wordToReveal.charAt(0)}"`;
     }
     else if (myPlayer.abilityCard === 'SILENCER') {
-      await update(ref(db, `rooms/${gameState.code}/players/${targetId}/isSilenced`), true);
+      // FIX: Use 'set' instead of 'update' for boolean value
+      await set(ref(db, `rooms/${gameState.code}/players/${targetId}/isSilenced`), true);
       resultMessage = `Silenced ${targetPlayer.name}. Their vote is now 0.`;
     }
 
     // 2. Mark Card as Used
-    await update(ref(db, `rooms/${gameState.code}/players/${playerId}/isCardUsed`), true);
+    // FIX: Use 'set' instead of 'update' for boolean value
+    await set(ref(db, `rooms/${gameState.code}/players/${playerId}/isCardUsed`), true);
     
     return resultMessage;
   };
