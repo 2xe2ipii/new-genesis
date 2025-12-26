@@ -22,9 +22,9 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
   const me = room.players[playerId];
   const playersList = Object.values(room.players);
   
-  // FIX: Type cast to 'any' or 'Record' to allow string indexing
-  // TypeScript thinks this is an array, but Firebase stores it as an object map
-  const hasVotedToSkip = (room.votesToSkipDiscussion as any)?.[playerId];
+  // FIX: votesToSkipDiscussion is an Array, so we must use .includes()
+  // We use optional chaining (?.) just in case the array is undefined initially
+  const hasVotedToSkip = room.votesToSkipDiscussion?.includes(playerId);
   
   // Local state for "Arming" the ability
   const [isTargeting, setIsTargeting] = useState(false);
@@ -38,6 +38,7 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
     );
   }
 
+  // ... (Rest of the file remains exactly the same)
   const canUseAbility = me.abilityCard && !me.isCardUsed;
   const toggleTargeting = () => {
     if (canUseAbility) setIsTargeting(!isTargeting);
@@ -50,10 +51,8 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
     }
   };
 
-  // Safe timer check
   const isUrgent = Number(minutes) === 0 && Number(seconds) < 30;
 
-  // Helper for Item Icons
   const getItemIcon = (card: AbilityCard) => {
     if (card === 'RADAR') return <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>;
     if (card === 'INTERCEPT') return <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
@@ -98,18 +97,17 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
                 onClick={() => handlePlayerTap(p.id)}
                 className={`relative aspect-square rounded-lg flex flex-col items-center justify-center p-2 transition-all duration-300 border ${
                   isMe 
-                    ? 'bg-slate-800 border-slate-600 opacity-100' // Me
+                    ? 'bg-slate-800 border-slate-600 opacity-100' 
                     : isValidTarget
-                      ? 'bg-amber-900/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)] cursor-pointer animate-pulse' // Targetable
-                      : 'bg-slate-900/50 border-slate-800 opacity-60' // Standard
+                      ? 'bg-amber-900/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)] cursor-pointer animate-pulse' 
+                      : 'bg-slate-900/50 border-slate-800 opacity-60' 
                 }`}
               >
-                {/* Name Only - No Avatar */}
+                {/* Name Only */}
                 <span className={`text-xs font-black uppercase truncate w-full text-center tracking-wider ${isValidTarget ? 'text-amber-400' : 'text-slate-300'}`}>
                   {p.name}
                 </span>
 
-                {/* Optional: 'ME' indicator */}
                 {isMe && <span className="text-[8px] text-slate-500 mt-1 uppercase">UNIT_SELF</span>}
 
                 {/* Target Overlay Icon */}
@@ -129,7 +127,7 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
       {/* 3. TACTICAL FOOTER */}
       <div className="bg-slate-900 border-t border-slate-800 p-4 space-y-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20">
         
-        {/* WEAPON SLOT (Ability) */}
+        {/* WEAPON SLOT */}
         {me.abilityCard && (
            <button
              disabled={me.isCardUsed}
@@ -142,7 +140,6 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
                     : 'bg-slate-800 border-slate-700 hover:border-slate-500'
              }`}
            >
-             {/* Left: Icon + Label */}
              <div className="flex items-center gap-3 z-10">
                <div className={`p-1.5 rounded ${me.isCardUsed ? 'text-slate-600 bg-slate-900' : 'text-amber-500 bg-amber-950/50 border border-amber-500/30'}`}>
                  {getItemIcon(me.abilityCard)}
@@ -157,7 +154,6 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
                </div>
              </div>
 
-             {/* Right: Status Indicator */}
              <div className="z-10">
                 {me.isCardUsed ? (
                    <span className="text-[10px] font-bold text-slate-600 uppercase">DEPLETED</span>
@@ -168,7 +164,6 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
                 )}
              </div>
 
-             {/* Active Scanline Background */}
              {!me.isCardUsed && isTargeting && (
                 <div className="absolute inset-0 bg-amber-500/5 animate-[scan_2s_ease-in-out_infinite]" />
              )}
