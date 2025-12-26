@@ -1,4 +1,3 @@
-// src/components/WelcomeScreen.tsx
 import React, { useState } from 'react';
 
 interface WelcomeScreenProps {
@@ -10,63 +9,117 @@ interface WelcomeScreenProps {
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, loading }) => {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
+  const [mode, setMode] = useState<'JOIN' | 'CREATE'>('JOIN'); // simple local toggle to clean up UI
 
   return (
-    <div className="flex flex-col justify-center h-full space-y-8 animate-in fade-in zoom-in duration-500">
+    <div className="flex flex-col justify-center h-full max-w-sm mx-auto w-full animate-in fade-in duration-700">
       
-      <div className="text-center space-y-2">
-        <h1 className="text-5xl font-black tracking-tighter bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg">
-          NEW GENESIS
+      {/* 1. BRAND HEADER */}
+      <div className="text-center mb-12 space-y-2">
+        <h1 className="text-6xl font-black tracking-tighter text-violet-500 drop-shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+          GENESIS
         </h1>
-        <p className="text-slate-400 text-sm tracking-widest uppercase">Trust No One.</p>
+        <p className="text-slate-600 text-xs tracking-[0.3em] uppercase font-medium">
+          Trust No One
+        </p>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <label className="text-xs font-bold text-slate-500 uppercase ml-1">Codename</label>
+      {/* 2. MAIN FORM CARD */}
+      <div className="space-y-6">
+        
+        {/* IDENTITY INPUT */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">
+            Identity
+          </label>
           <input
             type="text"
-            placeholder="Enter your name..."
-            className="w-full bg-slate-800 border border-slate-700 text-white p-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-lg font-bold placeholder:font-normal"
+            placeholder="ENTER CODENAME"
+            className="w-full bg-slate-900/50 border border-slate-800 text-slate-200 p-4 rounded-lg focus:outline-none focus:border-violet-500 focus:bg-slate-900 transition-all text-center font-bold uppercase tracking-wider placeholder:text-slate-700"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
 
-        <div className="relative">
-           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-700"></div>
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-slate-900 px-2 text-slate-500">Mission Select</span>
-          </div>
-        </div>
-
-        <button
-          disabled={!name || loading}
-          onClick={() => onCreate(name)}
-          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 p-4 rounded-xl font-bold text-white shadow-lg hover:shadow-purple-500/25 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Initializing...' : 'Create New Mission'}
-        </button>
-
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Room Code"
-            className="w-24 bg-slate-800 border border-slate-700 text-center text-white p-4 rounded-xl font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500"
-            maxLength={4}
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-          />
+        {/* MODE SWITCHER (Subtle Tabs) */}
+        <div className="grid grid-cols-2 gap-1 p-1 bg-slate-900/50 rounded-lg border border-slate-800/50">
           <button
-            disabled={!name || code.length !== 4 || loading}
-            onClick={() => onJoin(code, name)}
-            className="flex-1 bg-slate-800 border-2 border-slate-700 p-4 rounded-xl font-bold text-slate-300 hover:border-slate-500 hover:text-white active:scale-95 transition-all disabled:opacity-50"
+            onClick={() => setMode('JOIN')}
+            className={`py-2 text-xs font-bold uppercase tracking-wider rounded transition-all ${
+              mode === 'JOIN' 
+                ? 'bg-slate-800 text-violet-400 shadow-sm' 
+                : 'text-slate-600 hover:text-slate-400'
+            }`}
           >
             Join Mission
           </button>
+          <button
+            onClick={() => setMode('CREATE')}
+            className={`py-2 text-xs font-bold uppercase tracking-wider rounded transition-all ${
+              mode === 'CREATE' 
+                ? 'bg-slate-800 text-violet-400 shadow-sm' 
+                : 'text-slate-600 hover:text-slate-400'
+            }`}
+          >
+            New Mission
+          </button>
         </div>
+
+        {/* ACTION AREA */}
+        <div className="bg-slate-900/30 border border-slate-800/50 rounded-xl p-4 space-y-4">
+          
+          {mode === 'JOIN' ? (
+            /* JOIN FLOW */
+            <div className="space-y-4 animate-in slide-in-from-bottom-2 fade-in duration-300">
+              <div className="space-y-2">
+                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">
+                   Access Code
+                 </label>
+                 <input
+                   type="text"
+                   placeholder="____"
+                   maxLength={4}
+                   className="w-full bg-slate-950 border border-slate-800 text-white text-3xl p-4 rounded-lg font-mono text-center tracking-[0.5em] focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/20 transition-all uppercase placeholder:text-slate-800"
+                   value={code}
+                   onChange={(e) => setCode(e.target.value.toUpperCase())}
+                 />
+              </div>
+              
+              <button
+                disabled={!name || code.length !== 4 || loading}
+                onClick={() => onJoin(code, name)}
+                className="w-full bg-violet-600 hover:bg-violet-500 text-white p-4 rounded-lg font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_20px_rgba(124,58,237,0.3)] active:scale-[0.98]"
+              >
+                {loading ? 'Decrypting...' : 'Connect'}
+              </button>
+            </div>
+          ) : (
+            /* CREATE FLOW */
+            <div className="space-y-4 py-2 animate-in slide-in-from-bottom-2 fade-in duration-300">
+              <div className="p-4 border border-violet-900/30 bg-violet-900/10 rounded-lg">
+                <p className="text-violet-300 text-xs text-center leading-relaxed">
+                  You will be assigned as <strong className="text-white">Host</strong>.
+                  <br/>
+                  Share the access code with up to 8 other agents.
+                </p>
+              </div>
+
+              <button
+                disabled={!name || loading}
+                onClick={() => onCreate(name)}
+                className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-violet-500/50 text-violet-400 p-4 rounded-lg font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+              >
+                {loading ? 'Initializing...' : 'Generate Protocol'}
+              </button>
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* FOOTER DECORATION */}
+      <div className="mt-12 flex justify-center opacity-20">
+         <div className="h-1 w-12 bg-slate-700 rounded-full" />
       </div>
     </div>
   );
