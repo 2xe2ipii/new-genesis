@@ -181,9 +181,104 @@ export const useGame = () => {
     });
   };
 
+  const castVote = async (targetId: string) => {
+    if (!gameState) return;
+    
+    // 1. Lock in the vote
+    const updates: Record<string, any> = {};
+    updates[`rooms/${gameState.code}/players/${playerId}/votedFor`] = targetId;
+    updates[`rooms/${gameState.code}/players/${playerId}/isVoteLocked`] = true;
+    
+    await update(ref(db), updates);
+  };
+
+  // Host-only check to see if everyone voted
+  const checkVotingComplete = async () => {
+    if (!gameState || !gameState.players[playerId].isHost) return;
+    
+    const players = Object.values(gameState.players);
+    const totalVotes = players.filter(p => p.isVoteLocked).length;
+    
+    if (totalVotes === players.length && gameState.phase === 'VOTING') {
+      // Move to Suspense Phase automatically
+      await update(ref(db, `rooms/${gameState.code}/phase`), 'SUSPENSE');
+      
+      // Delay 3 seconds then calculate results
+      setTimeout(() => calculateResults(), 3000);
+    }
+  };
+
+  const calculateResults = async () => {
+    if (!gameState) return;
+    
+    const players = Object.values(gameState.players);
+    const votes: Record<string, number> = {};
+    
+    // 1. Tally Votes (Respecting Silencer)
+    players.forEach(voter => {
+      if (voter.votedFor && !voter.isSilenced) {
+        votes[voter.votedFor] = (votes[voter.votedFor] || 0) + 1;
+      }
+    });
+
+    // 2. Find Most Voted
+    let maxVotes = 0;
+    let mostVotedPlayerId: string | null = null;
+    
+    Object.entries(votes).forEach(([pid, count]) => {
+      if (count > maxVotes) {
+        maxVotes = count;
+        mostVotedPlayerId = pid;
+      } else if (count === maxVotes) {
+        // Tie handling: For this MVP, if tie, nobody dies? Or random? 
+        // Let's say: Tie = Locals Lose (Chaos ensues).
+        mostVotedPlayerId = null; 
+      }
+    });
+
+    // 3. Determine Winner
+    let winner: 'LOCALS' | 'SPY' | 'JOKER' = 'SPY'; // Default Spy wins if confusion
+    
+    if (mostVotedPlayerId) {
+      const victim = gameState.players[mostVotedPlayerId];
+      if (victim.role === 'SPY') winner = 'LOCALS';
+      else if (victim.role === 'JOKER') winner = 'JOKER';
+      else winner = 'SPY'; // They voted a Local or Tourist
+    }
+
+    // 4. Update DB
+    const updates: Record<string, any> = {};
+    updates[`rooms/${gameState.code}/winner`] = winner;
+    updates[`rooms/${gameState.code}/phase`] = 'RESULTS';
+    
+    await update(ref(db), updates);
+  };
+
+  const returnToLobby = async () => {
+     if (!gameState) return;
+     // Reset game data but keep players
+     const updates: Record<string, any> = {};
+     updates[`rooms/${gameState.code}/phase`] = 'LOBBY';
+     updates[`rooms/${gameState.code}/winner`] = null;
+     updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
+     
+     // Reset player states
+     Object.keys(gameState.players).forEach(pid => {
+       updates[`rooms/${gameState.code}/players/${pid}/isReady`] = false;
+       updates[`rooms/${gameState.code}/players/${pid}/role`] = null;
+       updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
+       updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
+       updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
+       updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
+     });
+     
+     await update(ref(db), updates);
+  };
+
   return {
     gameState, playerId, loading, error,
     createRoom, joinRoom, leaveRoom, toggleReady,
-    startGame, useCard, voteToSkip
+    startGame, useCard, voteToSkip,
+    castVote, checkVotingComplete, returnToLobby
   };
 };
