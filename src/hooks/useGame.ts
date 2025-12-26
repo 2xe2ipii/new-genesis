@@ -35,6 +35,7 @@ export const useGame = () => {
       const newPlayer: Player = {
         id: playerId, name: playerName, isHost: true, isReady: false,
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
+        cardTargetId: null, // <--- INIT
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
         isScrambled: false 
       };
@@ -69,6 +70,7 @@ export const useGame = () => {
       const newPlayer: Player = {
         id: playerId, name: playerName, isHost: false, isReady: false,
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
+        cardTargetId: null, // <--- INIT
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
         isScrambled: false
       };
@@ -112,6 +114,7 @@ export const useGame = () => {
         updates[`rooms/${gameState.code}/players/${pid}/secretWord`] = assignments[pid].word;
         updates[`rooms/${gameState.code}/players/${pid}/abilityCard`] = cardAssignments[pid];
         updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
+        updates[`rooms/${gameState.code}/players/${pid}/cardTargetId`] = null; // <--- RESET
         updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
         updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false;
         updates[`rooms/${gameState.code}/players/${pid}/votesReceived`] = 0;
@@ -137,29 +140,22 @@ export const useGame = () => {
 
     const updates: Record<string, any> = {};
 
-    // 1. Mark Card as Used immediately
+    // 1. Mark Card as Used & SAVE TARGET
     updates[`rooms/${gameState.code}/players/${playerId}/isCardUsed`] = true;
+    updates[`rooms/${gameState.code}/players/${playerId}/cardTargetId`] = targetId; // <--- SAVE TARGET
 
     // 2. Handle Effects
     if (myPlayer.abilityCard === 'RADAR') {
-      // Logic: SPY/TOURIST/JOKER = Threat (true)
       const isActuallyThreat = ['SPY', 'TOURIST', 'JOKER'].includes(targetPlayer.role || '');
-      
-      // CHECK FOR SCRAMBLER TRAP
       const isScrambled = targetPlayer.isScrambled === true;
       
-      // If scrambled, flip the result. If not, keep original.
-      // e.g., Local (Safe) + Scrambled -> Threat
-      // e.g., Spy (Threat) + Scrambled -> Safe
       const finalResultIsThreat = isScrambled ? !isActuallyThreat : isActuallyThreat;
       const resultText = finalResultIsThreat ? `THREAT` : `SAFE`;
 
-      // If the trap was triggered, consume it (remove the scrambled status)
       if (isScrambled) {
         updates[`rooms/${gameState.code}/players/${targetId}/isScrambled`] = false;
       }
       
-      // BROADCAST MESSAGE
       const msgRef = push(ref(db, `rooms/${gameState.code}/systemMessages`));
       updates[`rooms/${gameState.code}/systemMessages/${msgRef.key}`] = {
         type: 'RADAR_RESULT',
@@ -170,10 +166,8 @@ export const useGame = () => {
     } 
     else if (myPlayer.abilityCard === 'SILENCER') {
       updates[`rooms/${gameState.code}/players/${targetId}/isSilenced`] = true;
-      // Silencer is silent. No system message.
     }
     else if (myPlayer.abilityCard === 'SPOOF') { 
-      // Plants the trap on target (could be self)
       updates[`rooms/${gameState.code}/players/${targetId}/isScrambled`] = true;
     }
 
@@ -281,6 +275,7 @@ export const useGame = () => {
        updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
        updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
        updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
+       updates[`rooms/${gameState.code}/players/${pid}/cardTargetId`] = null; // <--- RESET
        updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
        updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false;
      });

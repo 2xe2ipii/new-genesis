@@ -26,55 +26,48 @@ export type GamePhase =
 // --- 2. CORE ENTITIES ---
 
 export interface SystemMessage {
-  type: string;        // e.g., 'RADAR_RESULT', 'SPOOF_ACTIVATE'
-  text: string;        // The message to display
-  targetId: string | null; // Who was targeted (optional)
-  timestamp: number;   // For sorting
+  type: string;
+  text: string;
+  targetId: string | null;
+  timestamp: number;
 }
 
 export interface Player {
-  id: string;          // Unique device ID or socket ID
-  name: string;        // Display name
-  avatar?: string;     // Optional: Emoji or color code
-  isHost: boolean;     // Can start the game
-  isReady: boolean;    // For Lobby status
+  id: string;
+  name: string;
+  avatar?: string;
+  isHost: boolean;
+  isReady: boolean;
   
-  // Game State Data (Hidden from others locally)
+  // Game State
   role: PlayerRole | null;
-  secretWord: string;  // "Sun" or "Day" or "" (for Tourist)
+  secretWord: string;
   
   // Card System
   abilityCard: AbilityCard;
   isCardUsed: boolean;
+  cardTargetId?: string | null; // <--- NEW: Remembers who you used the card on
   
   // Voting Data
-  votedFor: string | null;  // ID of player they voted for
-  isVoteLocked: boolean;    // Cannot change vote once true
-  votesReceived: number;    // Calculated server-side or derived
+  votedFor: string | null;
+  isVoteLocked: boolean;
+  votesReceived: number;
   
   // Status Effects
-  isSilenced: boolean;      // If true, their vote counts as 0
-  isScrambled?: boolean;    // NEW: If true, Radar results are inverted
+  isSilenced: boolean;
+  isScrambled?: boolean;
 }
 
 export interface Room {
-  code: string;           // The 4-letter join code
+  code: string;
   hostId: string;
-  players: Record<string, Player>; // Map ID -> Player
-  
-  // Global State
+  players: Record<string, Player>;
   phase: GamePhase;
-  timerEndTime: number;   // Timestamp (Date.now() + ms)
-  
-  // The Hidden Truths (Stored in DB, but clients should be careful reading)
+  timerEndTime: number;
   majorityWord: string;
   impostorWord: string;
-  
-  // Dynamic Game Data
   votesToSkipDiscussion: string[]; 
   winner: 'LOCALS' | 'SPY' | 'JOKER' | null;
-  
-  // NEW: System Message Feed
   systemMessages?: Record<string, SystemMessage>;
 }
 
