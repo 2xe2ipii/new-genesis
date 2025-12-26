@@ -10,18 +10,20 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [mode, setMode] = useState<'JOIN' | 'CREATE'>('JOIN');
+  
+  // NEW: Track if the hidden code input actually has focus
+  const [isCodeFocused, setIsCodeFocused] = useState(false);
 
-  // Helper to ensure code is always uppercase and max 4 chars
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
     setCode(val);
   };
 
   return (
-    <div className="flex flex-col justify-center h-full max-w-sm mx-auto w-full animate-in fade-in duration-700">
+    <div className="flex flex-col justify-center min-h-full max-w-sm mx-auto w-full animate-in fade-in duration-700 py-6">
       
       {/* 1. BRAND HEADER */}
-      <div className="text-center mb-12 space-y-2">
+      <div className="text-center mb-10 space-y-2">
         <h1 className="text-6xl font-black tracking-tighter text-violet-500 drop-shadow-[0_0_15px_rgba(139,92,246,0.3)]">
           GENESIS
         </h1>
@@ -31,7 +33,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
       </div>
 
       {/* 2. MAIN FORM CARD */}
-      <div className="space-y-6">
+      <div className="space-y-6 flex-1 flex flex-col justify-center">
         
         {/* IDENTITY INPUT */}
         <div className="space-y-2">
@@ -83,7 +85,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
                  </label>
                  
                  {/* SEGMENTED INPUT CONTAINER */}
-                 <div className="relative h-16 w-full">
+                 <div className="relative h-16 w-full group">
                     {/* The Invisible Real Input */}
                     <input
                       type="text"
@@ -91,6 +93,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
                       maxLength={4}
                       value={code}
                       onChange={handleCodeChange}
+                      onFocus={() => setIsCodeFocused(true)} // TRACK FOCUS
+                      onBlur={() => setIsCodeFocused(false)}   // TRACK BLUR
                       autoComplete="off"
                     />
 
@@ -98,7 +102,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
                     <div className="absolute inset-0 flex justify-between gap-2 z-10 pointer-events-none">
                       {[0, 1, 2, 3].map((index) => {
                         const char = code[index] || "";
-                        const isActive = code.length === index;
+                        const isCurrentSlot = code.length === index;
+                        // FIX: Only show active state if it's the current slot AND the input is actually focused
+                        const isActive = isCurrentSlot && isCodeFocused;
                         const isFilled = char !== "";
 
                         return (
@@ -113,11 +119,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
                             }`}
                           >
                             {char}
-                            {/* Placeholder Line for empty slots */}
+                            
+                            {/* Placeholder Line (Only if empty and NOT active) */}
                             {!isFilled && !isActive && (
-                              <div className="w-4 h-1 bg-slate-800 rounded-full" />
+                              <div className="w-4 h-1 bg-slate-800 rounded-full group-hover:bg-slate-700 transition-colors" />
                             )}
-                            {/* Blinking Cursor for active slot */}
+                            
+                            {/* Blinking Cursor (Only if TRULY active) */}
                             {isActive && (
                                <div className="w-0.5 h-8 bg-violet-500 animate-pulse" />
                             )}
@@ -160,8 +168,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreate, onJoin, 
 
       </div>
 
-      <div className="mt-12 flex justify-center opacity-20">
-         <div className="h-1 w-12 bg-slate-700 rounded-full" />
+      {/* 3. FOOTER SIGNATURE */}
+      <div className="mt-12 flex flex-col items-center gap-2 opacity-40 hover:opacity-100 transition-opacity duration-500">
+         <div className="h-px w-12 bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
+         <p className="text-[10px] text-slate-500 font-mono tracking-[0.2em] uppercase">
+           System Architect <span className="text-violet-400 font-bold">2XE2IPI</span>
+         </p>
       </div>
     </div>
   );
