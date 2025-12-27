@@ -106,8 +106,10 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
                   </p>
 
                   <div className="py-4 border-y border-slate-800/50">
-                    <p className="mb-2 text-xs text-slate-500 uppercase tracking-widest">Passphrase</p>
-                    <p className="text-4xl md:text-5xl font-black text-white tracking-widest drop-shadow-md">
+                    <p className="mb-2 text-xs text-slate-500 uppercase tracking-widest">
+                      {wordType === 'question' ? "Security Question" : "Passphrase"}
+                    </p>
+                    <p className={`${wordType === 'question' ? 'text-xl' : 'text-4xl md:text-5xl'} font-black text-white tracking-widest drop-shadow-md`}>
                       {player.secretWord || "UNKNOWN"}
                     </p>
                   </div>
