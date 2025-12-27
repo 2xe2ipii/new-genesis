@@ -110,7 +110,6 @@ export const useGame = () => {
       // FIX: Set timer to 7 minutes (7 * 60 * 1000)
       updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 7 * 60 * 1000;
       updates[`rooms/${gameState.code}/wordType`] = wordType;
-      updates[`rooms/${gameState.code}/wordType`] = wordType;
       updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
       updates[`rooms/${gameState.code}/systemMessages`] = null;
 

@@ -83,7 +83,7 @@ export const WORD_PAIRS = [
   },
   {
     majority: "Saan ka nag-aaral?",
-    impostor: "Saan ka unang pumasok sa school?",
+    impostor: "Saan ka unang pumasok na school?",
     type: "question",
   },
   {

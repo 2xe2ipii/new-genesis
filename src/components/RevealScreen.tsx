@@ -9,7 +9,7 @@ interface RevealScreenProps {
   onReadyToDiscuss: () => void;
 }
 
-export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDiscuss }) => {
+export const RevealScreen: React.FC<RevealScreenProps> = ({ player, wordType, onReadyToDiscuss }) => {
   const [isRevealed, setIsRevealed] = useState(false);
 
   // 1. THEME & TEXT LOGIC
@@ -107,9 +107,9 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, onReadyToDis
 
                   <div className="py-4 border-y border-slate-800/50">
                     <p className="mb-2 text-xs text-slate-500 uppercase tracking-widest">
-                      {wordType === 'question' ? "Security Question" : "Passphrase"}
+                      {wordType === 'question' ? 'Security Question' : 'Passphrase'}
                     </p>
-                    <p className={`${wordType === 'question' ? 'text-xl' : 'text-4xl md:text-5xl'} font-black text-white tracking-widest drop-shadow-md`}>
+                    <p className={`${wordType === 'question' ? 'text-xl md:text-2xl leading-relaxed' : 'text-4xl md:text-5xl'} font-black text-white tracking-widest drop-shadow-md`}>
                       {player.secretWord || "UNKNOWN"}
                     </p>
                   </div>
