@@ -18,7 +18,7 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
   onUseCard,
   onVoteToSkip,
 }) => {
-  const [hasRevealed, setHasRevealed] = useState(false);
+  const [hasRevealed, setHasRevealed] = useState(room.round > 1);
   const { minutes, seconds } = useTimer(room.timerEndTime);
   const me = room.players[playerId];
   const playersList = Object.values(room.players);

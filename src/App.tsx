@@ -71,6 +71,39 @@ function App() {
     clearError
   } = useGame();
 
+  const [localResultsDismissed, setLocalResultsDismissed] = useState(true);
+  const [resultsSnapshot, setResultsSnapshot] = useState<any>(null);
+
+  // Update snapshot only while we are in the actual results/suspense phase
+  useEffect(() => {
+    if (gameState?.phase === 'SUSPENSE' || gameState?.phase === 'RESULTS') {
+      setResultsSnapshot(gameState);
+    }
+  }, [gameState]);
+
+  // Reset the dismissal when the game actually hits the results phase
+  useEffect(() => {
+    if (gameState?.phase === 'RESULTS') {
+      setLocalResultsDismissed(false);
+    }
+  }, [gameState?.phase]);
+
+  // Handler: Only trigger the DB update if the phase is strictly RESULTS.
+  // If the phase is already DISCUSSION (because someone else clicked), just dismiss the local view.
+  const handleProceedToRound2 = () => {
+    if (gameState?.phase === 'RESULTS') {
+      startNextRound();
+    }
+    setLocalResultsDismissed(true);
+  };
+
+  const handleReturnToLobby = () => {
+    // Attempt to reset global state (will be ignored by hook if already done)
+    returnToLobby();
+    // Dismiss the local results view to reveal the Lobby
+    setLocalResultsDismissed(true);
+  };
+
   const [cardResult, setCardResult] = useState<string | null>(null);
   const [displayedError, setDisplayedError] = useState<string | null>(null);
 
@@ -110,7 +143,8 @@ function App() {
         />
       ) : (
         <>
-          {gameState.phase === 'LOBBY' && (
+          {/* LOGIC: Show Lobby only if we aren't holding the final results screen open */}
+          {gameState.phase === 'LOBBY' && (localResultsDismissed || !resultsSnapshot) && (
             <LobbyScreen 
               room={gameState}
               playerId={playerId}
@@ -120,7 +154,8 @@ function App() {
             />
           )}
 
-          {(gameState.phase === 'DISCUSSION' || gameState.phase === 'REVEAL') && (
+          {/* LOGIC: Show Discussion if phase is correct. If Round > 1, wait for dismissal. Round 1 always shows. */}
+          {(gameState.phase === 'DISCUSSION' || gameState.phase === 'REVEAL') && (gameState.round === 1 || localResultsDismissed) && (
             <DiscussionScreen 
                room={gameState}
                playerId={playerId}
@@ -138,12 +173,19 @@ function App() {
              />
           )}
 
-          {(gameState.phase === 'SUSPENSE' || gameState.phase === 'RESULTS') && (
+          {/* LOGIC: Show Results if phase is Results, OR if we are in Round 2 overlay, OR if we are in Lobby overlay */}
+          {(
+            gameState.phase === 'SUSPENSE' || 
+            gameState.phase === 'RESULTS' || 
+            (gameState.phase === 'DISCUSSION' && gameState.round > 1 && !localResultsDismissed) ||
+            (gameState.phase === 'LOBBY' && !localResultsDismissed && resultsSnapshot)
+          ) && (
              <ResultsScreen 
-               room={gameState}
-               playerId={playerId} // <--- 2. NEW
-               onReturnToLobby={returnToLobby}
-               onStartNextRound={startNextRound} // <--- 3. NEW
+               // FIX: Use snapshot if we are in an overlay state (Discussion or Lobby)
+               room={((gameState.phase === 'DISCUSSION' || gameState.phase === 'LOBBY') && resultsSnapshot) ? resultsSnapshot : gameState}
+               playerId={playerId} 
+               onReturnToLobby={handleReturnToLobby} // Use new handler
+               onStartNextRound={handleProceedToRound2} 
              />
           )}
         </>

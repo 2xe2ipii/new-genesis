@@ -247,14 +247,20 @@ export const useGame = () => {
       const victim = gameState.players[mostVotedPlayerId];
 
       if (victim.role === 'SPY') winner = 'LOCALS';
-      else if (victim.role === 'JOKER') winner = 'JOKER';
+      else if (victim.role === 'JOKER') winner = 'JOKER'; // Joker only wins if strictly the top vote (no tie)
       else {
-        if (currentRound === 1) winner = null;
-        else winner = 'SPY';
+        // Innocent ejected
+        if (currentRound === 1) winner = null; // Game continues
+        else winner = 'SPY'; // Locals lose on Round 2
       }
     } else {
-      if (currentRound === 1) winner = null;
-      else winner = 'SPY';
+      // TIE SCENARIO
+      if (currentRound === 1) {
+        winner = null; // No one dies, proceed to Round 2
+      } else {
+        // Final Round Tie -> Spy survives -> Spy Wins
+        winner = 'SPY'; 
+      }
     }
 
     const updates: Record<string, any> = {};
@@ -290,7 +296,8 @@ export const useGame = () => {
   };
 
   const returnToLobby = async () => {
-    if (!gameState) return;
+    // FIX: If already in Lobby, don't reset everyone's state again.
+    if (!gameState || gameState.phase === 'LOBBY') return;
     const updates: Record<string, any> = {};
     updates[`rooms/${gameState.code}/phase`] = 'LOBBY';
     updates[`rooms/${gameState.code}/winner`] = null;

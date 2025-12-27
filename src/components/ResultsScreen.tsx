@@ -154,8 +154,11 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
   }, [outcomeTone]);
 
   // Stage 4 (final report) is the ONLY place allowed to show green.
-    const winner = (room as any).winner as 'LOCALS' | 'SPY' | 'JOKER' | null;
-  const isRoundOneEnd = !winner && room.phase === "RESULTS";
+  const winner = (room as any).winner as 'LOCALS' | 'SPY' | 'JOKER' | null;
+  
+  // FIX: Don't check room.phase === "RESULTS" here, because this screen is now
+  // sometimes shown as an overlay during the start of the Discussion phase.
+  const isRoundOneEnd = !winner;
 
   // Personalized win/loss: what YOU see depends on your role + alive state.
   const myResult = useMemo(() => {
@@ -172,12 +175,14 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
     }
 
     if (winner === "SPY") {
-      if (role === "SPY") return { title: "VICTORY", color: "text-rose-400", isWin: true };
+      // FIX: Changed VICTORY color from rose-400 to emerald-400
+      if (role === "SPY") return { title: "VICTORY", color: "text-emerald-400", isWin: true };
       return { title: "DEFEAT", color: "text-rose-500", isWin: false };
     }
 
     if (winner === "JOKER") {
-      if (role === "JOKER") return { title: "VICTORY", color: "text-fuchsia-400", isWin: true };
+      // FIX: Changed VICTORY color from fuchsia-400 to emerald-400
+      if (role === "JOKER") return { title: "VICTORY", color: "text-emerald-400", isWin: true };
       return { title: "DEFEAT", color: "text-rose-500", isWin: false };
     }
 
@@ -792,7 +797,17 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
             <div className="flex-1 overflow-y-auto">
               {scoreboard.map((p: any, i: number) => {
                 const isEjected = victimId && p.id === victimId;
-                const roleCls = p.role === "SPY" ? "text-rose-400" : p.role === "LOCAL" ? "text-emerald-400" : "text-amber-300";
+                const isDead = p.isEliminated;
+
+                // FIX: Only show roles if Game Over, or if it's YOU, or if the player is Dead (revealed)
+                const isRoleVisible = winner || p.id === me?.id || isDead;
+                
+                const roleText = isRoleVisible ? p.role : "HIDDEN";
+                
+                // FIX: SPY color is now Rose (Red), Locals Emerald, Joker Amber. Hidden is Slate.
+                const roleCls = !isRoleVisible 
+                  ? "text-slate-600"
+                  : p.role === "SPY" ? "text-rose-500" : p.role === "LOCAL" ? "text-emerald-400" : "text-amber-300";
 
                 return (
                   <motion.div
@@ -801,17 +816,32 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: Math.min(0.5, i * 0.05) }}
                     className={`flex items-center justify-between gap-4 p-5 md:p-6 border-b border-slate-900 hover:bg-white/[0.04] transition-colors ${
-                      isEjected ? "bg-rose-500/10" : ""
+                      isEjected ? "bg-rose-500/10" : isDead ? "bg-slate-900/80 grayscale opacity-60" : ""
                     }`}
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-lg md:text-xl font-black uppercase truncate">{p.name}</span>
+                        <span className={`text-lg md:text-xl font-black uppercase truncate ${isDead ? 'line-through decoration-rose-500/50 text-slate-500' : 'text-slate-200'}`}>
+                          {p.name}
+                        </span>
 
-                        {isEjected && (
-                          <span className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded font-black uppercase tracking-widest">
-                            Ejected
-                          </span>
+                        {/* VISUAL INDICATOR FOR DEAD PLAYERS */}
+                        {isDead && (
+                          <div className="flex items-center gap-2">
+                             {!isEjected && (
+                               <span className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-1">
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
+                                    <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                                  </svg>
+                                  DEAD
+                               </span>
+                             )}
+                             {isEjected && (
+                              <span className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded font-black uppercase tracking-widest">
+                                EJECTED
+                              </span>
+                             )}
+                          </div>
                         )}
                         {p?.isSilenced && (
                           <span className="text-[10px] bg-slate-700 text-white/90 px-2 py-0.5 rounded font-black uppercase tracking-widest">
@@ -831,12 +861,13 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                       </div>
 
                       <div className="mt-2 text-xs text-slate-500 uppercase tracking-widest">
-                        Code: <span className="text-slate-200/80">{p.secretWord ?? "—"}</span>
+                         {/* Only show secret word if visible */}
+                        Code: <span className="text-slate-200/80">{isRoleVisible ? (p.secretWord ?? "—") : "••••"}</span>
                       </div>
                     </div>
 
                     <div className={`shrink-0 text-sm md:text-base font-black uppercase tracking-widest ${roleCls}`}>
-                      {p.role}
+                      {roleText}
                     </div>
                   </motion.div>
                 );
