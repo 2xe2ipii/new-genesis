@@ -229,3 +229,8 @@ export const WORD_PAIRS = [
     type: "question",
   },
 ];
+
+export const getRandomWordPair = () => {
+  const index = Math.floor(Math.random() * WORD_PAIRS.length);
+  return WORD_PAIRS[index];
+}
