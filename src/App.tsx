@@ -67,20 +67,17 @@ function App() {
     castVote,
     checkVotingComplete,
     returnToLobby,
-    clearError // 1. Destructure the new function
+    startNextRound, // <--- 1. NEW
+    clearError
   } = useGame();
 
   const [cardResult, setCardResult] = useState<string | null>(null);
-  
-  // Local state to manage the visual visibility of the error
   const [displayedError, setDisplayedError] = useState<string | null>(null);
 
-  // 2. The Fix: Consume and Clear
   useEffect(() => {
     if (error) {
-      setDisplayedError(error); // Show it locally
-      clearError(); // Clear it from the hook immediately so the next error triggers a change
-      
+      setDisplayedError(error);
+      clearError();
       const timer = setTimeout(() => {
         setDisplayedError(null);
       }, 3000); 
@@ -94,7 +91,6 @@ function App() {
 
   return (
     <Layout>
-      {/* Global System Alert */}
       {displayedError && (
         <SystemAlert 
           message={displayedError} 
@@ -102,12 +98,10 @@ function App() {
         />
       )}
 
-      {/* Global Card Result Modal */}
       {cardResult && (
         <CardResultModal message={cardResult} onClose={() => setCardResult(null)} />
       )}
 
-      {/* Main Routing Logic */}
       {!gameState ? (
         <WelcomeScreen 
           onCreate={createRoom} 
@@ -147,7 +141,9 @@ function App() {
           {(gameState.phase === 'SUSPENSE' || gameState.phase === 'RESULTS') && (
              <ResultsScreen 
                room={gameState}
+               playerId={playerId} // <--- 2. NEW
                onReturnToLobby={returnToLobby}
+               onStartNextRound={startNextRound} // <--- 3. NEW
              />
           )}
         </>

@@ -5,8 +5,9 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 interface ResultsScreenProps {
   room: Room;
+  playerId: string; // <--- NEW
   onReturnToLobby: () => void;
-  onStartNextRound?: () => void;
+  onStartNextRound: () => void; // <--- NEW
 }
 
 /**
@@ -28,8 +29,22 @@ const STAGES = {
 
 type Stage = (typeof STAGES)[keyof typeof STAGES];
 
-export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, onReturnToLobby, onStartNextRound }) => {
+export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, onReturnToLobby, onStartNextRound }) => {
   const [stage, setStage] = useState<Stage>(STAGES.TAKEOVER);
+
+  const me = (room as any).players?.[playerId] ?? (room as any).players?.[String(playerId)];
+
+  if (!me) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950 font-mono text-white flex items-center justify-center p-6 text-center">
+        <div>
+          <h1 className="text-xl font-black uppercase tracking-widest text-rose-500">PLAYER NOT FOUND</h1>
+          <p className="mt-2 text-xs text-slate-500 uppercase tracking-wider">Missing playerId in room.players</p>
+        </div>
+      </div>
+    );
+  }
+
 
   // Stage 2 decrypt + suspense
   const [decryptProgress, setDecryptProgress] = useState<number>(0);
@@ -139,12 +154,35 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, onReturnToLo
   }, [outcomeTone]);
 
   // Stage 4 (final report) is the ONLY place allowed to show green.
-  const winner = (room as any).winner as string | undefined;
-  const isRoundOneEnd = !winner && room.phase === 'RESULTS';
-  const winnerColor =
-    winner === "LOCALS" ? "text-emerald-400" : winner === "JOKER" ? "text-fuchsia-400" : winner === "SPY" ? "text-rose-400" : "text-slate-200";
+    const winner = (room as any).winner as 'LOCALS' | 'SPY' | 'JOKER' | null;
+  const isRoundOneEnd = !winner && room.phase === "RESULTS";
 
-  const winnerTitle = winner === "LOCALS" ? "VICTORY" : winner === "JOKER" ? "JOKER WINS" : winner === "SPY" ? "DEFEAT" : "ROUND COMPLETE";
+  // Personalized win/loss: what YOU see depends on your role + alive state.
+  const myResult = useMemo(() => {
+    if (!winner) return { title: "ROUND COMPLETE", color: "text-slate-200", isWin: false };
+
+    // If you're dead, you lose (even if your faction wins).
+    if (me?.isEliminated) return { title: "DEFEAT", color: "text-rose-500", isWin: false };
+
+    const role = me?.role as any;
+
+    if (winner === "LOCALS") {
+      if (role === "LOCAL" || role === "TOURIST") return { title: "VICTORY", color: "text-emerald-400", isWin: true };
+      return { title: "DEFEAT", color: "text-rose-500", isWin: false };
+    }
+
+    if (winner === "SPY") {
+      if (role === "SPY") return { title: "VICTORY", color: "text-rose-400", isWin: true };
+      return { title: "DEFEAT", color: "text-rose-500", isWin: false };
+    }
+
+    if (winner === "JOKER") {
+      if (role === "JOKER") return { title: "VICTORY", color: "text-fuchsia-400", isWin: true };
+      return { title: "DEFEAT", color: "text-rose-500", isWin: false };
+    }
+
+    return { title: "GAME OVER", color: "text-slate-200", isWin: false };
+  }, [winner, me]);
 
   const clearAllTimers = useCallback(() => {
     for (const id of timersRef.current) window.clearTimeout(id);
@@ -729,7 +767,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, onReturnToLo
               }`}
             >
               <p className="text-[10px] text-slate-400 uppercase tracking-[0.5em] mb-2">{isRoundOneEnd ? "INTERMEDIATE REPORT" : "FINAL REPORT"}</p>
-              <h1 className={`text-4xl md:text-6xl font-black uppercase tracking-tighter ${winnerColor}`}>{winnerTitle}</h1>
+              <h1 className={`text-4xl md:text-6xl font-black uppercase tracking-tighter ${winner ? myResult.color : 'text-slate-200'}`}>{winner ? myResult.title : 'ROUND COMPLETE'}</h1>
               <p className="text-sm opacity-70 mt-2 max-w-2xl">
                 {winner === "LOCALS"
                   ? "The infiltration failed. The city survives."
@@ -807,21 +845,26 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, onReturnToLo
 
             <div className="p-6 border-t border-slate-800 bg-slate-900/70 backdrop-blur">
               {winner ? (
-              <button
-                onClick={onReturnToLobby}
-                className="w-full py-5 bg-white text-black hover:bg-violet-400 transition-colors font-black uppercase tracking-[0.22em] text-sm"
-              >
-                INITIALIZE NEW GAME
-              </button>
-            ) : (
-              <button
-                onClick={onStartNextRound}
-                disabled={!onStartNextRound}
-                className="w-full py-5 bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-black uppercase tracking-[0.22em] text-sm animate-pulse"
-              >
-                PROCEED TO FINAL ROUND
-              </button>
-            )}</div>
+                 <button
+                   onClick={onReturnToLobby}
+                   className="w-full py-5 bg-white text-black hover:bg-violet-400 transition-colors font-black uppercase tracking-[0.22em] text-sm"
+                 >
+                   INITIALIZE NEW GAME
+                 </button>
+              ) : (
+                 me?.isEliminated ? (
+                    <div className="w-full py-5 bg-slate-800 text-slate-500 font-black uppercase tracking-[0.22em] text-sm text-center border border-slate-700">
+                       STATUS: TERMINATED // SPECTATING
+                    </div>
+                 ) : (
+                    <button
+                      onClick={onStartNextRound}
+                      className="w-full py-5 bg-rose-600 text-white hover:bg-rose-500 transition-colors font-black uppercase tracking-[0.22em] text-sm animate-pulse"
+                    >
+                      PROCEED TO FINAL ROUND
+                    </button>
+                 )
+              )}</div>
           </motion.div>
         )}
       </AnimatePresence>
