@@ -101,7 +101,7 @@ export const useGame = () => {
     if (!gameState) return;
     setLoading(true);
     try {
-      const { assignments, cardAssignments, majority, impostor, wordType } = distributeGameRoles(gameState.players);
+      const { assignments, cardAssignments, wordType } = distributeGameRoles(gameState.players);
       const updates: Record<string, any> = {};
 
       updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
