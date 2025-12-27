@@ -106,7 +106,8 @@ export const useGame = () => {
       updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
       updates[`rooms/${gameState.code}/round`] = 1;
       updates[`rooms/${gameState.code}/winner`] = null;
-      updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 10 * 60 * 1000;
+      // FIX: Set timer to 7 minutes (7 * 60 * 1000)
+      updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 7 * 60 * 1000;
       updates[`rooms/${gameState.code}/majorityWord`] = majority;
       updates[`rooms/${gameState.code}/impostorWord`] = impostor;
       updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
@@ -284,7 +285,8 @@ export const useGame = () => {
     updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
     updates[`rooms/${gameState.code}/round`] = 2;
     updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
-    updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 5 * 60 * 1000;
+    // FIX: Set timer to 7 minutes for round 2 as well
+    updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 7 * 60 * 1000;
 
     Object.keys(gameState.players).forEach(pid => {
       updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
@@ -293,6 +295,15 @@ export const useGame = () => {
     });
 
     await update(ref(db), updates);
+  };
+
+  // --- NEW: Force Voting Phase (when timer expires) ---
+  const forceVotingPhase = async () => {
+    if (!gameState) return;
+    // Only update if we are still in discussion
+    if (gameState.phase === 'DISCUSSION') {
+      await set(ref(db, `rooms/${gameState.code}/phase`), 'VOTING');
+    }
   };
 
   const returnToLobby = async () => {
@@ -327,6 +338,6 @@ export const useGame = () => {
     createRoom, joinRoom, leaveRoom, toggleReady,
     startGame, useCard, voteToSkip,
     castVote, checkVotingComplete, returnToLobby, startNextRound,
-    clearError
+    clearError, forceVotingPhase
   };
 };

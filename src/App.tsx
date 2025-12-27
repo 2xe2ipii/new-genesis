@@ -67,7 +67,8 @@ function App() {
     castVote,
     checkVotingComplete,
     returnToLobby,
-    startNextRound, // <--- 1. NEW
+    startNextRound, 
+    forceVotingPhase, // <--- NEW: Import the force function
     clearError
   } = useGame();
 
@@ -161,6 +162,7 @@ function App() {
                playerId={playerId}
                onUseCard={handleUseCard}
                onVoteToSkip={voteToSkip}
+               onTimeout={forceVotingPhase} // <--- NEW: Pass the handler
             />
           )}
           

@@ -10,6 +10,7 @@ interface DiscussionScreenProps {
   playerId: string;
   onUseCard: (targetId: string) => void;
   onVoteToSkip: () => void;
+  onTimeout?: () => void; // <--- NEW PROP
 }
 
 export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
@@ -17,10 +18,20 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
   playerId,
   onUseCard,
   onVoteToSkip,
+  onTimeout, // <--- 1. Make sure onTimeout is destructured here
 }) => {
+  // KEEP your existing logic: Skip reveal if it's Round 2+
   const [hasRevealed, setHasRevealed] = useState(room.round > 1);
   const { minutes, seconds } = useTimer(room.timerEndTime);
   const me = room.players[playerId];
+
+  // FIX: Host monitors the timer. If it hits 00:00, force the voting phase.
+  React.useEffect(() => {
+    // FIX: 'minutes' is a number, so check === 0. 'seconds' becomes "00" string when 0.
+    if (me.isHost && minutes === 0 && seconds === '00' && onTimeout) {
+      onTimeout();
+    }
+  }, [minutes, seconds, me.isHost, onTimeout]);
   const playersList = Object.values(room.players);
 
   // Voting Check
@@ -303,23 +314,31 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
           </button>
         )}
 
-        <button
-          onClick={onVoteToSkip}
-          className={`w-full p-4 rounded-lg font-bold uppercase tracking-[0.2em] text-xs transition-all border ${
-            hasVotedToSkip
-              ? 'bg-slate-800 border-violet-500 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)]'
-              : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'
-          }`}
-        >
-          {hasVotedToSkip ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="animate-pulse">●</span>
-              <span>VOTE REGISTERED (TAP TO CANCEL)</span>
-            </span>
-          ) : (
-            'INITIATE VOTE_SKIP'
-          )}
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={onVoteToSkip}
+            className={`w-full p-4 rounded-lg font-bold uppercase tracking-[0.2em] text-xs transition-all border ${
+              hasVotedToSkip
+                ? 'bg-slate-800 border-violet-500 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.1)]'
+                : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'
+            }`}
+          >
+            {/* FIX: Shorter text to prevent wrapping on mobile */}
+            {hasVotedToSkip ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-pulse">●</span>
+                <span>CANCEL VOTE</span>
+              </span>
+            ) : (
+              'INITIATE VOTE_SKIP'
+            )}
+          </button>
+          
+          {/* FIX: Added helper text */}
+          <p className="text-[9px] text-center text-slate-600 uppercase tracking-wider">
+            Voting begins automatically when all agents accept.
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -420,7 +420,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
   return (
     <div
       onClick={onOverlayClick}
-      className="fixed inset-0 z-50 w-screen h-screen bg-slate-950 font-mono text-white overflow-hidden flex flex-col select-none"
+      // FIX: Changed h-screen to h-[100dvh] to prevent mobile browser bars from covering the bottom button
+      className="fixed inset-0 z-50 w-screen h-[100dvh] bg-slate-950 font-mono text-white overflow-hidden flex flex-col select-none"
     >
       {grid}
       {vignette}
