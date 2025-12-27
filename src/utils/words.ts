@@ -1,42 +1,231 @@
 // src/utils/words.ts
 
 export const WORD_PAIRS = [
-  // Original pairs...
-  { majority: "Sun", impostor: "Moon" },
-  { majority: "Coffee", impostor: "Tea" },
-  { majority: "Beach", impostor: "Pool" },
-  { majority: "Train", impostor: "Subway" },
-  { majority: "Guitar", impostor: "Violin" },
-  
-  // Nature & Weather
-  { majority: "Mountain", impostor: "Hill" },
-  { majority: "Rain", impostor: "Snow" },
-  { majority: "River", impostor: "Lake" },
-  
-  // Food & Drink
-  { majority: "Hamburger", impostor: "Sandwich" },
-  { majority: "Pizza", impostor: "Pasta" },
-  { majority: "Wine", impostor: "Beer" },
-  { majority: "Butter", impostor: "Margarine" },
-  
-  // Objects & Daily Life
-  { majority: "Wallet", impostor: "Purse" },
-  { majority: "Mirror", impostor: "Window" },
-  { majority: "Toothbrush", impostor: "Hairbrush" },
-  { majority: "Laptop", impostor: "Tablet" },
-  
-  // Animals & Creatures
-  { majority: "Lion", impostor: "Tiger" },
-  { majority: "Dolphin", impostor: "Shark" },
-  { majority: "Butterfly", impostor: "Moth" },
-  
-  // Entertainment & Tech
-  { majority: "Netflix", impostor: "YouTube" },
-  { majority: "Instagram", impostor: "TikTok" },
-  { majority: "Cinema", impostor: "Theater" }
-];
+  // --- WORD VERSION (Standard / Filipino + Global) ---
+  { majority: "Pepsi", impostor: "Coke", type: "word" },
+  { majority: "Jollibee", impostor: "McDo", type: "word" },
+  { majority: "Sinigang", impostor: "Nilaga", type: "word" },
+  { majority: "Adobo", impostor: "Caldereta", type: "word" },
+  { majority: "Tapsilog", impostor: "Longsilog", type: "word" },
+  { majority: "Taho", impostor: "Balut", type: "word" },
+  { majority: "iPhone", impostor: "Samsung", type: "word" },
+  { majority: "Android", impostor: "iOS", type: "word" },
+  { majority: "Grab", impostor: "Angkas", type: "word" },
+  { majority: "Lazada", impostor: "Shopee", type: "word" },
+  { majority: "Facebook", impostor: "TikTok", type: "word" },
+  { majority: "Instagram", impostor: "Twitter", type: "word" },
+  { majority: "Netflix", impostor: "YouTube", type: "word" },
+  { majority: "Spotify", impostor: "Apple Music", type: "word" },
+  { majority: "Starbucks", impostor: "Dunkin", type: "word" },
+  { majority: "7-Eleven", impostor: "Ministop", type: "word" },
+  { majority: "Nike", impostor: "Adidas", type: "word" },
+  { majority: "Uniqlo", impostor: "H&M", type: "word" },
+  { majority: "Jeepney", impostor: "Bus", type: "word" },
+  { majority: "Tricycle", impostor: "Pedicab", type: "word" },
+  { majority: "Laptop", impostor: "Desktop", type: "word" },
+  { majority: "Mouse", impostor: "Touchpad", type: "word" },
+  { majority: "Keyboard", impostor: "Controller", type: "word" },
+  { majority: "Windows", impostor: "MacOS", type: "word" },
+  { majority: "Chrome", impostor: "Safari", type: "word" },
+  { majority: "Google", impostor: "Bing", type: "word" },
+  { majority: "ChatGPT", impostor: "Siri", type: "word" },
+  { majority: "Coffee", impostor: "Tea", type: "word" },
+  { majority: "Milk Tea", impostor: "Fruit Tea", type: "word" },
+  { majority: "Pizza", impostor: "Burger", type: "word" },
+  { majority: "Fries", impostor: "Onion Rings", type: "word" },
+  { majority: "Rice", impostor: "Bread", type: "word" },
+  { majority: "Ice Cream", impostor: "Cake", type: "word" },
+  { majority: "Chocolate", impostor: "Candy", type: "word" },
+  { majority: "Pencil", impostor: "Pen", type: "word" },
+  { majority: "Notebook", impostor: "Binder", type: "word" },
+  { majority: "Backpack", impostor: "Sling Bag", type: "word" },
+  { majority: "Shoes", impostor: "Slippers", type: "word" },
+  { majority: "Watch", impostor: "Bracelet", type: "word" },
+  { majority: "Aircon", impostor: "Electric Fan", type: "word" },
+  { majority: "Television", impostor: "Projector", type: "word" },
+  { majority: "Camera", impostor: "Phone", type: "word" },
+  { majority: "Speaker", impostor: "Headphones", type: "word" },
+  { majority: "Keyboard Cat", impostor: "Grumpy Cat", type: "word" },
+  { majority: "Mario", impostor: "Luigi", type: "word" },
+  { majority: "Valorant", impostor: "CSGO", type: "word" },
+  { majority: "Dota", impostor: "League of Legends", type: "word" },
 
-export const getRandomWordPair = () => {
-  const index = Math.floor(Math.random() * WORD_PAIRS.length);
-  return WORD_PAIRS[index];
-};
+  // --- QUESTION VERSION (Tagalog) ---
+  {
+    majority: "Anong paborito mong ulam?",
+    impostor: "Anong ulam ang huli mong kinain?",
+    type: "question",
+  },
+  {
+    majority: "Saan ka madalas kumain?",
+    impostor: "Saan ka huling nagutom?",
+    type: "question",
+  },
+  {
+    majority: "Sino ang best friend mo?",
+    impostor: "Sino ang huli mong nakausap?",
+    type: "question",
+  },
+  {
+    majority: "Ano ang paborito mong inumin?",
+    impostor: "Ano ang iniinom mo kapag may sakit?",
+    type: "question",
+  },
+  {
+    majority: "Anong oras ka natutulog?",
+    impostor: "Anong oras ka nagigising?",
+    type: "question",
+  },
+  {
+    majority: "Anong kulay ang madalas mong isuot?",
+    impostor: "Anong kulay ang ayaw mong isuot?",
+    type: "question",
+  },
+  {
+    majority: "Saan ka nag-aaral?",
+    impostor: "Saan ka unang pumasok sa school?",
+    type: "question",
+  },
+  {
+    majority: "Anong ginagawa mo tuwing weekend?",
+    impostor: "Anong ginagawa mo tuwing may sakit ka?",
+    type: "question",
+  },
+  {
+    majority: "Anong pagkain ang ayaw mo?",
+    impostor: "Anong pagkain ang mahal mo?",
+    type: "question",
+  },
+  {
+    majority: "Anong app ang palagi mong binubuksan?",
+    impostor: "Anong app ang bihira mong gamitin?",
+    type: "question",
+  },
+  {
+    majority: "Sino ang idol mo?",
+    impostor: "Sino ang ayaw mong kausap?",
+    type: "question",
+  },
+  {
+    majority: "Anong oras ka naliligo?",
+    impostor: "Anong oras ka nag-aalmusal?",
+    type: "question",
+  },
+  {
+    majority: "Anong handa tuwing Pasko?",
+    impostor: "Anong handa tuwing birthday?",
+    type: "question",
+  },
+  {
+    majority: "Saan ka masaya pumunta?",
+    impostor: "Saan ka natatakot pumunta?",
+    type: "question",
+  },
+  {
+    majority: "Anong larong nilalaro mo?",
+    impostor: "Anong larong tinigil mo na?",
+    type: "question",
+  },
+
+  // --- QUESTION VERSION (English) ---
+  {
+    majority: "What do you usually eat for breakfast?",
+    impostor: "What did you eat yesterday?",
+    type: "question",
+  },
+  {
+    majority: "What is your favorite movie?",
+    impostor: "What movie did you last watch?",
+    type: "question",
+  },
+  {
+    majority: "Where do you usually hang out?",
+    impostor: "Where were you last night?",
+    type: "question",
+  },
+  {
+    majority: "What music do you listen to?",
+    impostor: "What music do you avoid?",
+    type: "question",
+  },
+  {
+    majority: "Who is your favorite actor?",
+    impostor: "Who do you see every day?",
+    type: "question",
+  },
+  {
+    majority: "What game do you play the most?",
+    impostor: "What game did you quit?",
+    type: "question",
+  },
+  {
+    majority: "What do you do before sleeping?",
+    impostor: "What do you do after waking up?",
+    type: "question",
+  },
+  {
+    majority: "What is your dream destination?",
+    impostor: "Where did you last travel?",
+    type: "question",
+  },
+  {
+    majority: "What do you drink when you're thirsty?",
+    impostor: "What do you drink when you're sick?",
+    type: "question",
+  },
+  {
+    majority: "What color do you like?",
+    impostor: "What color do you hate?",
+    type: "question",
+  },
+  {
+    majority: "What app do you open first?",
+    impostor: "What app do you close first?",
+    type: "question",
+  },
+  {
+    majority: "What time do you usually wake up?",
+    impostor: "What time do you usually sleep?",
+    type: "question",
+  },
+  {
+    majority: "What food do you crave?",
+    impostor: "What food makes you full fast?",
+    type: "question",
+  },
+  {
+    majority: "What do you spend money on?",
+    impostor: "What do you save money for?",
+    type: "question",
+  },
+  {
+    majority: "What is your favorite subject?",
+    impostor: "What subject do you find hard?",
+    type: "question",
+  },
+  {
+    majority: "What do you do for fun?",
+    impostor: "What do you do when bored?",
+    type: "question",
+  },
+  {
+    majority: "What social media do you use most?",
+    impostor: "What social media do you rarely use?",
+    type: "question",
+  },
+  {
+    majority: "What do you bring when you go out?",
+    impostor: "What do you forget to bring often?",
+    type: "question",
+  },
+  {
+    majority: "What do you eat when stressed?",
+    impostor: "What do you eat when celebrating?",
+    type: "question",
+  },
+  {
+    majority: "What is your favorite drink?",
+    impostor: "What drink do you dislike?",
+    type: "question",
+  },
+];
