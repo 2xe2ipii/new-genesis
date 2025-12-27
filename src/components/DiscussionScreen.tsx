@@ -74,7 +74,13 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
   }
 
   if (!hasRevealed) {
-    return <RevealScreen player={me} wordType={room.wordType} onReadyToDiscuss={() => setHasRevealed(true)} />;
+    return (
+      <RevealScreen 
+        player={me} 
+        wordType={room.wordType} 
+        onReadyToDiscuss={() => setHasRevealed(true)} 
+      />
+    );
   }
 
   const toggleTargeting = () => {
@@ -181,9 +187,14 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
         <div className="flex-1 flex flex-col justify-center items-center p-2 relative overflow-hidden group">
           <div className="absolute inset-0 bg-violet-500/5 group-hover:bg-violet-500/10 transition-colors" />
           <p className="text-[9px] text-violet-400 uppercase tracking-widest mb-1">
-            {room.wordType === 'question' ? 'Question' : 'Passphrase'}
+            {room.wordType === 'question' ? 'Secret Question' : 'Passphrase'}
           </p>
-          <p className="text-lg font-bold text-white uppercase tracking-wider truncate max-w-full px-2">
+          <p className={`${
+            room.wordType === 'question' 
+              ? 'text-[10px] leading-3 line-clamp-3 text-center whitespace-normal' 
+              : 'text-lg truncate whitespace-nowrap'
+            } font-bold text-white uppercase tracking-wider max-w-full px-2`}
+          >
             {me.secretWord || '???'}
           </p>
         </div>
