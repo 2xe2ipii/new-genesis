@@ -5,17 +5,10 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 interface ResultsScreenProps {
   room: Room;
-  playerId: string; // <--- NEW
+  playerId: string;
   onReturnToLobby: () => void;
-  onStartNextRound: () => void; // <--- NEW
+  onStartNextRound: () => void;
 }
-
-/**
- * Mafia-style cinematic reveal (NO GREEN before final report).
- * - Click / Space / Enter: advance
- * - Shift+Click or Shift+Space: skip to report
- * - Esc: skip to report
- */
 
 const ROLE_OPTIONS = ["LOCAL", "SPY", "JOKER"] as const;
 
@@ -45,12 +38,9 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
     );
   }
 
-
   // Stage 2 decrypt + suspense
   const [decryptProgress, setDecryptProgress] = useState<number>(0);
   const [canAdvance, setCanAdvance] = useState<boolean>(false);
-
-  // Stage 2 roulette (keeps it guessy; never hints real length)
   const [rouletteIndex, setRouletteIndex] = useState<number>(0);
 
   const reduceMotion = useReducedMotion();
@@ -60,7 +50,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
   const rouletteRef = useRef<number | null>(null);
   const rouletteSlowRef = useRef<number | null>(null);
 
-  // Ref to avoid re-creating roulette intervals every frame
   const decryptProgressRef = useRef<number>(0);
   useEffect(() => {
     decryptProgressRef.current = decryptProgress;
@@ -123,7 +112,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
   const isSpyCaught = ejectedRole === "SPY";
   const outcomeTone: "success" | "fail" | "neutral" = !ejectedPlayer ? "neutral" : isSpyCaught ? "success" : "fail";
 
-  // IMPORTANT: Success is VIOLET (not green). Fail is ROSE.
   const tone = useMemo(() => {
     if (outcomeTone === "success")
       return {
@@ -153,18 +141,12 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
     };
   }, [outcomeTone]);
 
-  // Stage 4 (final report) is the ONLY place allowed to show green.
   const winner = (room as any).winner as 'LOCALS' | 'SPY' | 'JOKER' | null;
-  
-  // FIX: Don't check room.phase === "RESULTS" here, because this screen is now
-  // sometimes shown as an overlay during the start of the Discussion phase.
   const isRoundOneEnd = !winner;
 
-  // Personalized win/loss: what YOU see depends on your role + alive state.
   const myResult = useMemo(() => {
     if (!winner) return { title: "ROUND COMPLETE", color: "text-slate-200", isWin: false };
 
-    // If you're dead, you lose (even if your faction wins).
     if (me?.isEliminated) return { title: "DEFEAT", color: "text-rose-500", isWin: false };
 
     const role = me?.role as any;
@@ -175,13 +157,11 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
     }
 
     if (winner === "SPY") {
-      // FIX: Green for Spy Victory
       if (role === "SPY") return { title: "VICTORY", color: "text-emerald-400", isWin: true };
       return { title: "DEFEAT", color: "text-rose-500", isWin: false };
     }
 
     if (winner === "JOKER") {
-      // FIX: Green for Joker Victory
       if (role === "JOKER") return { title: "VICTORY", color: "text-emerald-400", isWin: true };
       return { title: "DEFEAT", color: "text-rose-500", isWin: false };
     }
@@ -214,19 +194,16 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
     setStage((s) => (s >= STAGES.REPORT ? STAGES.REPORT : ((s + 1) as Stage)));
   }, []);
 
-  // Key the reveal timeline to a stable signature, not the entire `room` object
   const revealSig = useMemo(() => {
     return [
       victimId ?? "none",
       isTie ? "tie" : "no_tie",
       String(totalVotesCounted),
       String(ejectedRole ?? "none"),
-      // FIX: Removed 'winner' so animation doesn't reset when phase changes to RESULTS
       String(players.length),
     ].join("|");
   }, [victimId, isTie, totalVotesCounted, ejectedRole, players.length]);
 
-  // Auto timeline
   useEffect(() => {
     clearAllTimers();
     setStage(STAGES.TAKEOVER);
@@ -283,7 +260,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
     };
   }, [stage, ejectedPlayer, reduceMotion]);
 
-  // Stage 2 roulette: interval stable; reads decrypt progress via ref
+  // Stage 2 roulette
   useEffect(() => {
     if (stage !== STAGES.DECRYPT || !ejectedPlayer) {
       if (rouletteRef.current) window.clearInterval(rouletteRef.current);
@@ -325,7 +302,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
     };
   }, [stage, ejectedPlayer, reduceMotion]);
 
-  // Input handlers
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") return jumpToReport();
@@ -351,12 +327,11 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
     [advance, jumpToReport, stage, ejectedPlayer, canAdvance]
   );
 
-  // Stage 2: fixed-length redaction (NEVER hints role length)
   const redactionTape = useMemo(() => {
     if (stage !== STAGES.DECRYPT || !ejectedPlayer) return "";
     const glyphs = "█▓▒░";
     const marks = "#@%&?";
-    const len = 18; // constant
+    const len = 18;
     const p = decryptProgress;
 
     const chaos = Math.max(0.18, 1 - p);
@@ -420,14 +395,12 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
   return (
     <div
       onClick={onOverlayClick}
-      // FIX: Changed h-screen to h-[100dvh] to prevent mobile browser bars from covering the bottom button
       className="fixed inset-0 z-50 w-screen h-[100dvh] bg-slate-950 font-mono text-white overflow-hidden flex flex-col select-none"
     >
       {grid}
       {vignette}
       {scanline}
 
-      {/* soft noise */}
       <motion.div
         className="pointer-events-none absolute inset-0 opacity-10 mix-blend-overlay"
         animate={{ opacity: reduceMotion ? 0.06 : [0.06, 0.12, 0.08, 0.14, 0.07] }}
@@ -439,7 +412,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
       />
 
       <AnimatePresence mode="wait">
-        {/* STAGE 0 — TAKEOVER */}
         {stage === STAGES.TAKEOVER && (
           <motion.div
             key="takeover"
@@ -461,7 +433,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
               initial={{ y: 16, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.18 }}
-              // FIX: Smaller font on mobile (text-3xl)
               className="mt-4 text-3xl md:text-7xl font-black tracking-tighter uppercase"
             >
               WITNESS
@@ -493,7 +464,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
           </motion.div>
         )}
 
-        {/* STAGE 1 — VERDICT */}
         {stage === STAGES.VERDICT && (
           <motion.div
             key="verdict"
@@ -521,7 +491,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                 transition={{ duration: 1.2, repeat: Infinity }}
               />
 
-              {/* FIX: Smaller font on mobile, break-words to prevent overflow */}
               <h1 className="text-3xl md:text-8xl font-black uppercase tracking-tighter drop-shadow-[0_0_34px_rgba(225,29,72,0.45)] break-words px-2">
                 {ejectedPlayer ? ejectedName : "NO ONE"}
               </h1>
@@ -594,7 +563,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
           </motion.div>
         )}
 
-        {/* STAGE 2 — DECRYPT */}
         {stage === STAGES.DECRYPT && (
           <motion.div
             key="decrypt"
@@ -636,7 +604,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                   <div className="mt-8 text-slate-400 text-xs uppercase tracking-[0.42em]">True Allegiance</div>
 
                   <motion.div
-                    // FIX: Significantly smaller font on mobile for the long redaction string
                     className="mt-5 text-xl md:text-7xl font-black uppercase tracking-[0.1em] md:tracking-[0.22em] text-white/20 break-all"
                     animate={reduceMotion ? {} : { x: [0, -1, 1, 0], opacity: [1, 0.9, 1] }}
                     transition={{ duration: 0.85, repeat: Infinity, ease: "easeInOut" }}
@@ -690,7 +657,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
           </motion.div>
         )}
 
-        {/* STAGE 3 — TRUTH */}
         {stage === STAGES.TRUTH && (
           <motion.div
             key="truth"
@@ -767,7 +733,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
           </motion.div>
         )}
 
-        {/* STAGE 4 — REPORT */}
         {stage === STAGES.REPORT && (
           <motion.div key="report" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-20 bg-slate-950 flex flex-col">
             <div
@@ -777,7 +742,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
             >
               <p className="text-[10px] text-slate-400 uppercase tracking-[0.5em] mb-2">{isRoundOneEnd ? "INTERMEDIATE REPORT" : "FINAL REPORT"}</p>
               
-              {/* FIX: ADDED CLEAR WINNER BANNER */}
               {winner && (
                 <div className="mb-2">
                   <span className={`inline-block border-y-2 py-1 px-3 text-xs md:text-sm font-black uppercase tracking-[0.3em] ${
@@ -788,7 +752,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                 </div>
               )}
 
-              {/* FIX: Responsive Text Size */}
               <h1 className={`text-3xl md:text-6xl font-black uppercase tracking-tighter ${winner ? myResult.color : 'text-slate-200'}`}>
                 {winner ? myResult.title : 'ROUND COMPLETE'}
               </h1>
@@ -818,7 +781,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                 const isEjected = victimId && p.id === victimId;
                 const isDead = p.isEliminated;
 
-                // FIX: Only show roles if Game Over, or if it's YOU, or if the player is Dead (revealed)
                 const isRoleVisible = winner || p.id === me?.id || isDead;
                 
                 const roleText = isRoleVisible ? p.role : "HIDDEN";
@@ -843,7 +805,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                           {p.name}
                         </span>
 
-                        {/* FIX: Dead Icon & Ejected Badge */}
                         {isDead && (
                           <div className="flex items-center gap-2">
                              {!isEjected && (
@@ -859,24 +820,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                           </div>
                         )}
 
-                        {/* VISUAL INDICATOR FOR DEAD PLAYERS */}
-                        {isDead && (
-                          <div className="flex items-center gap-2">
-                             {!isEjected && (
-                               <span className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-1">
-                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-                                    <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                                  </svg>
-                                  DEAD
-                               </span>
-                             )}
-                             {isEjected && (
-                              <span className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded font-black uppercase tracking-widest">
-                                EJECTED
-                              </span>
-                             )}
-                          </div>
-                        )}
                         {p?.isSilenced && (
                           <span className="text-[10px] bg-slate-700 text-white/90 px-2 py-0.5 rounded font-black uppercase tracking-widest">
                             Silenced
@@ -892,11 +835,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                             {p._score} pts
                           </span>
                         )}
-                      </div>
-
-                      <div className="mt-1 md:mt-2 text-[10px] md:text-xs text-slate-500 uppercase tracking-widest">
-                         {/* FIX: Mask Secret Word */}
-                        Code: <span className="text-slate-200/80">{isRoleVisible ? (p.secretWord ?? "—") : "••••"}</span>
                       </div>
                     </div>
 

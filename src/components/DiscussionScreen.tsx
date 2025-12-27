@@ -5,21 +5,6 @@ import { useTimer } from '../hooks/useTimer';
 import { RevealScreen } from './RevealScreen';
 import { AnimatePresence, motion } from 'framer-motion';
 
-// --- DATA: GAME MANUAL CONTENT ---
-const MANUAL_DATA = {
-  roles: [
-    { title: 'LOCAL', type: 'Majority', desc: 'Identify the Spy. Win by voting them out or if the Timer runs out (unless Spy guesses the word).' },
-    { title: 'SPY', type: 'Threat', desc: 'Blend in. You do not know the word. Win by surviving the vote or guessing the secret word.' },
-    { title: 'JOKER', type: 'Neutral', desc: 'Chaos Agent. You appear as a THREAT on Radar. Win specifically by getting voted out.' },
-    { title: 'TOURIST', type: 'Neutral', desc: 'Observer. You appear as a THREAT on Radar. Win by betting on the winning team (Spy or Locals).' }
-  ],
-  items: [
-    { title: 'RADAR', desc: 'Scans a player. Returns SAFE (Local) or THREAT (Spy, Joker, Tourist). Can be fooled by Spoof.' },
-    { title: 'SILENCER', desc: 'Select a player to block their vote in the upcoming Tribal Council.' },
-    { title: 'SPOOF', desc: 'Select a player. For this round, their Radar signature is flipped (Safe becomes Threat, Threat becomes Safe).' }
-  ]
-};
-
 interface DiscussionScreenProps {
   room: Room;
   playerId: string;
@@ -36,8 +21,6 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
   onTimeout,
 }) => {
   const [hasRevealed, setHasRevealed] = useState(room.round > 1);
-  const [isManualOpen, setIsManualOpen] = useState(false);
-  const [manualTab, setManualTab] = useState<'roles' | 'items'>('roles');
   const [pendingTarget, setPendingTarget] = useState<string | null>(null);
   
   const { minutes, seconds } = useTimer(room.timerEndTime);
@@ -134,17 +117,9 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
   return (
     <div className="flex flex-col h-full bg-slate-950 relative overflow-hidden font-mono">
       {/* --- TOP BAR --- */}
-      <div className="flex justify-between items-stretch h-20 border-b border-slate-800 bg-slate-900/50 relative">
-        {/* GLOBAL MANUAL BUTTON */}
-        <button 
-          onClick={() => setIsManualOpen(true)}
-          className="absolute top-2 right-2 z-50 p-2 text-slate-500 hover:text-white transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-             <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
-          </svg>
-        </button>
-
+      <div className="flex justify-between items-stretch h-20 border-b border-slate-800 bg-slate-900/50 relative pl-12">
+        {/* NOTE: Manual button is now in Layout.tsx. Added padding-left (pl-12) to avoid overlap with the new global button if needed, although Layout button is absolute. */}
+        
         <div className="flex-1 flex flex-col justify-center items-center border-r border-slate-800 p-2">
           <p className="text-[9px] text-slate-500 uppercase tracking-widest mb-1">Time</p>
           <div className={`text-3xl font-black tracking-tighter ${isUrgent ? 'text-red-500 animate-pulse' : 'text-white'}`}>
@@ -269,9 +244,19 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
               </div>
 
               {/* STATUS TEXT INDICATOR */}
-              <div className="pr-2">
+              <div className="pr-2 text-right">
                  {me.isCardUsed ? (
-                   <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">DEPLETED</span>
+                   <>
+                     {targetName ? (
+                       <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest block">
+                         USED ON: {targetName}
+                       </span>
+                     ) : (
+                       <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest block">
+                         DEPLETED
+                       </span>
+                     )}
+                   </>
                  ) : isTargeting ? (
                    <span className="text-[10px] font-bold text-white uppercase tracking-widest animate-pulse flex items-center gap-2">
                      <span className="w-2 h-2 bg-white rounded-full"></span>
@@ -285,7 +270,6 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
               </div>
             </div>
             {!me.isCardUsed && isTargeting && <div className={`absolute inset-0 ${cardConfig.bg}/10 animate-[scan_2s_ease-in-out_infinite] pointer-events-none`} />}
-            {me.isCardUsed && targetName && <p className="absolute bottom-1 w-full text-center text-[9px] text-yellow-500 font-bold uppercase z-10">Target: {targetName}</p>}
           </button>
         )}
 
@@ -343,65 +327,6 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
                     Confirm
                   </button>
                 </div>
-             </div>
-           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* --- GLOBAL MANUAL MODAL --- */}
-      <AnimatePresence>
-        {isManualOpen && (
-           <motion.div 
-             initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: '100%' }}
-             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-             className="absolute inset-0 z-50 bg-slate-950 flex flex-col p-6 overflow-hidden"
-           >
-             {/* Header */}
-             <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
-               <h2 className="text-2xl font-black uppercase tracking-widest text-white">Field Manual</h2>
-               <button onClick={() => setIsManualOpen(false)} className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white">
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                 </svg>
-               </button>
-             </div>
-             
-             {/* Tabs */}
-             <div className="flex gap-2 mb-4">
-               <button 
-                 onClick={() => setManualTab('roles')}
-                 className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded transition-colors ${manualTab === 'roles' ? 'bg-violet-600 text-white' : 'bg-slate-900 text-slate-500'}`}
-               >
-                 Roles
-               </button>
-               <button 
-                 onClick={() => setManualTab('items')}
-                 className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded transition-colors ${manualTab === 'items' ? 'bg-violet-600 text-white' : 'bg-slate-900 text-slate-500'}`}
-               >
-                 Items
-               </button>
-             </div>
-
-             {/* Content */}
-             <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-               {manualTab === 'roles' ? (
-                 MANUAL_DATA.roles.map((role) => (
-                   <div key={role.title} className="bg-slate-900/50 p-4 rounded border-l-2 border-violet-500">
-                     <div className="flex justify-between items-center mb-1">
-                       <span className="font-black text-white uppercase tracking-wider">{role.title}</span>
-                       <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-950 px-2 py-0.5 rounded">{role.type}</span>
-                     </div>
-                     <p className="text-xs text-slate-400 leading-relaxed">{role.desc}</p>
-                   </div>
-                 ))
-               ) : (
-                 MANUAL_DATA.items.map((item) => (
-                   <div key={item.title} className="bg-slate-900/50 p-4 rounded border-l-2 border-amber-500">
-                     <span className="block font-black text-white uppercase tracking-wider mb-1">{item.title}</span>
-                     <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
-                   </div>
-                 ))
-               )}
              </div>
            </motion.div>
         )}
