@@ -7,7 +7,7 @@ export const distributeGameRoles = (players: Record<string, Player>) => {
   const count = playerIds.length;
   
   // 1. Get Words
-  const { majority, impostor } = getRandomWordPair();
+  const { majority, impostor, type } = getRandomWordPair();
   
   // 2. Shuffle Players for Roles
   const shuffledForRoles = [...playerIds].sort(() => Math.random() - 0.5);
@@ -69,6 +69,7 @@ export const distributeGameRoles = (players: Record<string, Player>) => {
     assignments,
     cardAssignments,
     majority,
-    impostor
+    impostor,
+    wordType: type
   };
 };
