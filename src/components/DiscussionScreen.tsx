@@ -27,11 +27,12 @@ export const DiscussionScreen: React.FC<DiscussionScreenProps> = ({
 
   // FIX: Host monitors the timer. If it hits 00:00, force the voting phase.
   React.useEffect(() => {
-    // FIX: 'minutes' is a number, so check === 0. 'seconds' becomes "00" string when 0.
-    if (me.isHost && minutes === 0 && seconds === '00' && onTimeout) {
+    // We add room.timerEndTime > 0 to prevent accidental triggers during game initialization
+    if (me.isHost && room.timerEndTime > 0 && minutes === 0 && seconds === '00' && onTimeout) {
       onTimeout();
     }
-  }, [minutes, seconds, me.isHost, onTimeout]);
+  }, [minutes, seconds, me.isHost, onTimeout, room.timerEndTime]);
+  
   const playersList = Object.values(room.players);
 
   // Voting Check

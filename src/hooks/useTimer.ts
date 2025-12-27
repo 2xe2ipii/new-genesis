@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 
 export const useTimer = (endTime: number) => {
-  const [timeLeft, setTimeLeft] = useState(0);
+  // Initialize with a high number if no endTime yet to prevent immediate 00:00
+  const [timeLeft, setTimeLeft] = useState(endTime ? endTime - Date.now() : 999999);
 
   useEffect(() => {
     if (!endTime) return;
