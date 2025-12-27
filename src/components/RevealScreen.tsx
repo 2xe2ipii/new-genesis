@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface RevealScreenProps {
   player: Player;
+  wordType?: 'word' | 'question';
   onReadyToDiscuss: () => void;
 }
 

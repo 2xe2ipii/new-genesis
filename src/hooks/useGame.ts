@@ -43,6 +43,7 @@ export const useGame = () => {
       const newRoom: Room = {
         code: roomCode, hostId: playerId, players: { [playerId]: newPlayer },
         phase: 'LOBBY', timerEndTime: 0, majorityWord: '', impostorWord: '',
+        wordType: 'word',
         votesToSkipDiscussion: [], winner: null, round: 1
       };
 
@@ -100,7 +101,7 @@ export const useGame = () => {
     if (!gameState) return;
     setLoading(true);
     try {
-      const { assignments, cardAssignments, majority, impostor } = distributeGameRoles(gameState.players);
+      const { assignments, cardAssignments, majority, impostor, wordType } = distributeGameRoles(gameState.players);
       const updates: Record<string, any> = {};
 
       updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
@@ -108,8 +109,8 @@ export const useGame = () => {
       updates[`rooms/${gameState.code}/winner`] = null;
       // FIX: Set timer to 7 minutes (7 * 60 * 1000)
       updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 7 * 60 * 1000;
-      updates[`rooms/${gameState.code}/majorityWord`] = majority;
-      updates[`rooms/${gameState.code}/impostorWord`] = impostor;
+      updates[`rooms/${gameState.code}/wordType`] = wordType;
+      updates[`rooms/${gameState.code}/wordType`] = wordType;
       updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
       updates[`rooms/${gameState.code}/systemMessages`] = null;
 
