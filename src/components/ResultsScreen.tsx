@@ -175,13 +175,13 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
     }
 
     if (winner === "SPY") {
-      // FIX: Changed VICTORY color from rose-400 to emerald-400
+      // FIX: Green for Spy Victory
       if (role === "SPY") return { title: "VICTORY", color: "text-emerald-400", isWin: true };
       return { title: "DEFEAT", color: "text-rose-500", isWin: false };
     }
 
     if (winner === "JOKER") {
-      // FIX: Changed VICTORY color from fuchsia-400 to emerald-400
+      // FIX: Green for Joker Victory
       if (role === "JOKER") return { title: "VICTORY", color: "text-emerald-400", isWin: true };
       return { title: "DEFEAT", color: "text-rose-500", isWin: false };
     }
@@ -221,10 +221,10 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
       isTie ? "tie" : "no_tie",
       String(totalVotesCounted),
       String(ejectedRole ?? "none"),
-      String(winner ?? "none"),
+      // FIX: Removed 'winner' so animation doesn't reset when phase changes to RESULTS
       String(players.length),
     ].join("|");
-  }, [victimId, isTie, totalVotesCounted, ejectedRole, winner, players.length]);
+  }, [victimId, isTie, totalVotesCounted, ejectedRole, players.length]);
 
   // Auto timeline
   useEffect(() => {
@@ -460,7 +460,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
               initial={{ y: 16, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.18 }}
-              className="mt-4 text-4xl md:text-7xl font-black tracking-tighter uppercase"
+              // FIX: Smaller font on mobile (text-3xl)
+              className="mt-4 text-3xl md:text-7xl font-black tracking-tighter uppercase"
             >
               WITNESS
               <span className="block text-white/70">THE VERDICT</span>
@@ -519,7 +520,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                 transition={{ duration: 1.2, repeat: Infinity }}
               />
 
-              <h1 className="text-5xl md:text-8xl font-black uppercase tracking-tighter drop-shadow-[0_0_34px_rgba(225,29,72,0.45)]">
+              {/* FIX: Smaller font on mobile, break-words to prevent overflow */}
+              <h1 className="text-3xl md:text-8xl font-black uppercase tracking-tighter drop-shadow-[0_0_34px_rgba(225,29,72,0.45)] break-words px-2">
                 {ejectedPlayer ? ejectedName : "NO ONE"}
               </h1>
 
@@ -633,7 +635,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                   <div className="mt-8 text-slate-400 text-xs uppercase tracking-[0.42em]">True Allegiance</div>
 
                   <motion.div
-                    className="mt-5 text-4xl md:text-7xl font-black uppercase tracking-[0.22em] text-white/20"
+                    // FIX: Significantly smaller font on mobile for the long redaction string
+                    className="mt-5 text-xl md:text-7xl font-black uppercase tracking-[0.1em] md:tracking-[0.22em] text-white/20 break-all"
                     animate={reduceMotion ? {} : { x: [0, -1, 1, 0], opacity: [1, 0.9, 1] }}
                     transition={{ duration: 0.85, repeat: Infinity, ease: "easeInOut" }}
                     style={{ filter: "drop-shadow(0 0 18px rgba(139,92,246,0.18))" }}
@@ -767,13 +770,28 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
         {stage === STAGES.REPORT && (
           <motion.div key="report" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-20 bg-slate-950 flex flex-col">
             <div
-              className={`p-7 md:p-8 pb-5 border-b border-slate-800 ${
+              className={`p-5 md:p-8 pb-5 border-b border-slate-800 ${
                 winner === "LOCALS" ? "bg-emerald-900/20" : winner === "JOKER" ? "bg-fuchsia-900/20" : winner === "SPY" ? "bg-rose-900/20" : "bg-slate-900/40"
               }`}
             >
               <p className="text-[10px] text-slate-400 uppercase tracking-[0.5em] mb-2">{isRoundOneEnd ? "INTERMEDIATE REPORT" : "FINAL REPORT"}</p>
-              <h1 className={`text-4xl md:text-6xl font-black uppercase tracking-tighter ${winner ? myResult.color : 'text-slate-200'}`}>{winner ? myResult.title : 'ROUND COMPLETE'}</h1>
-              <p className="text-sm opacity-70 mt-2 max-w-2xl">
+              
+              {/* FIX: ADDED CLEAR WINNER BANNER */}
+              {winner && (
+                <div className="mb-2">
+                  <span className={`inline-block border-y-2 py-1 px-3 text-xs md:text-sm font-black uppercase tracking-[0.3em] ${
+                    winner === 'SPY' ? 'border-rose-500/50 text-rose-400' : winner === 'LOCALS' ? 'border-emerald-500/50 text-emerald-400' : 'border-fuchsia-500/50 text-fuchsia-400'
+                  }`}>
+                    WINNER: {winner === 'LOCALS' ? 'CITIZENS' : winner}
+                  </span>
+                </div>
+              )}
+
+              {/* FIX: Responsive Text Size */}
+              <h1 className={`text-3xl md:text-6xl font-black uppercase tracking-tighter ${winner ? myResult.color : 'text-slate-200'}`}>
+                {winner ? myResult.title : 'ROUND COMPLETE'}
+              </h1>
+              <p className="text-xs md:text-sm opacity-70 mt-2 max-w-2xl">
                 {winner === "LOCALS"
                   ? "The infiltration failed. The city survives."
                   : winner === "JOKER"
@@ -804,7 +822,6 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                 
                 const roleText = isRoleVisible ? p.role : "HIDDEN";
                 
-                // FIX: SPY color is now Rose (Red), Locals Emerald, Joker Amber. Hidden is Slate.
                 const roleCls = !isRoleVisible 
                   ? "text-slate-600"
                   : p.role === "SPY" ? "text-rose-500" : p.role === "LOCAL" ? "text-emerald-400" : "text-amber-300";
@@ -815,15 +832,31 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                     initial={{ x: -30, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: Math.min(0.5, i * 0.05) }}
-                    className={`flex items-center justify-between gap-4 p-5 md:p-6 border-b border-slate-900 hover:bg-white/[0.04] transition-colors ${
+                    className={`flex items-center justify-between gap-3 p-4 md:p-6 border-b border-slate-900 hover:bg-white/[0.04] transition-colors ${
                       isEjected ? "bg-rose-500/10" : isDead ? "bg-slate-900/80 grayscale opacity-60" : ""
                     }`}
                   >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className={`text-lg md:text-xl font-black uppercase truncate ${isDead ? 'line-through decoration-rose-500/50 text-slate-500' : 'text-slate-200'}`}>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-base md:text-xl font-black uppercase truncate ${isDead ? 'line-through decoration-rose-500/50 text-slate-500' : 'text-slate-200'}`}>
                           {p.name}
                         </span>
+
+                        {/* FIX: Dead Icon & Ejected Badge */}
+                        {isDead && (
+                          <div className="flex items-center gap-2">
+                             {!isEjected && (
+                               <span className="text-[9px] bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-1">
+                                  DEAD
+                               </span>
+                             )}
+                             {isEjected && (
+                              <span className="text-[9px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-widest">
+                                EJECTED
+                              </span>
+                             )}
+                          </div>
+                        )}
 
                         {/* VISUAL INDICATOR FOR DEAD PLAYERS */}
                         {isDead && (
@@ -860,13 +893,13 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ room, playerId, on
                         )}
                       </div>
 
-                      <div className="mt-2 text-xs text-slate-500 uppercase tracking-widest">
-                         {/* Only show secret word if visible */}
+                      <div className="mt-1 md:mt-2 text-[10px] md:text-xs text-slate-500 uppercase tracking-widest">
+                         {/* FIX: Mask Secret Word */}
                         Code: <span className="text-slate-200/80">{isRoleVisible ? (p.secretWord ?? "—") : "••••"}</span>
                       </div>
                     </div>
 
-                    <div className={`shrink-0 text-sm md:text-base font-black uppercase tracking-widest ${roleCls}`}>
+                    <div className={`shrink-0 text-xs md:text-base font-black uppercase tracking-widest ${roleCls}`}>
                       {roleText}
                     </div>
                   </motion.div>

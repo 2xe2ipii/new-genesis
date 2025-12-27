@@ -58,9 +58,10 @@ export const VotingScreen: React.FC<VotingScreenProps> = ({
     <div className="flex flex-col h-full bg-slate-950 text-white font-mono overflow-hidden relative">
 
       {/* HEADER */}
-      <div className="p-6 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm z-10">
-        <h1 className="text-2xl font-black text-rose-500 uppercase tracking-[0.2em] drop-shadow-[0_0_10px_rgba(244,63,94,0.5)] text-center animate-pulse">
-          ELIMINATION_PROTOCOL
+      <div className="p-4 md:p-6 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm z-10">
+        {/* FIX: Smaller font and tighter tracking on mobile to fit screen */}
+        <h1 className="text-lg md:text-2xl font-black text-rose-500 uppercase tracking-[0.1em] md:tracking-[0.2em] drop-shadow-[0_0_10px_rgba(244,63,94,0.5)] text-center animate-pulse truncate">
+          ELIMINATION PROTOCOL
         </h1>
         <p className="text-center text-[10px] text-slate-500 tracking-widest mt-2 uppercase">
           ROUND {room.round || 1} // {me.isVoteLocked ? 'VOTE LOCKED' : 'SELECT TARGET'}
