@@ -18,7 +18,7 @@ export type GamePhase =
   | 'LOBBY'          // Waiting for players
   | 'ASSIGNING'      // Roles are being distributed (internal state)
   | 'REVEAL'         // Scratch card phase to see roles
-  | 'DISCUSSION'     // 10 min timer running
+  | 'DISCUSSION'     // Timer running
   | 'VOTING'         // Voting process (Locked/Hidden)
   | 'SUSPENSE'       // The "Shuffle" animation before reveal
   | 'RESULTS';       // Winner declaration & Role reveal
@@ -42,11 +42,12 @@ export interface Player {
   // Game State
   role: PlayerRole | null;
   secretWord: string;
+  isEliminated?: boolean; // <--- NEW: Tracks if player died in Round 1
   
   // Card System
   abilityCard: AbilityCard;
   isCardUsed: boolean;
-  cardTargetId?: string | null; // <--- NEW: Remembers who you used the card on
+  cardTargetId?: string | null;
   
   // Voting Data
   votedFor: string | null;
@@ -63,6 +64,7 @@ export interface Room {
   hostId: string;
   players: Record<string, Player>;
   phase: GamePhase;
+  round: number; // <--- NEW: Tracks Round 1 vs Round 2
   timerEndTime: number;
   majorityWord: string;
   impostorWord: string;

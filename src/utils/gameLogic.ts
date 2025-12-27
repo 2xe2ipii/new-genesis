@@ -50,21 +50,19 @@ export const distributeGameRoles = (players: Record<string, Player>) => {
   let availableForStandardCards = [...playerIds];
 
   // A. Assign SPOOF (Only to a Threat)
-  // We pick one random threat to hold the Spoof card
   if (threatIds.length > 0) {
     const randomThreatIndex = Math.floor(Math.random() * threatIds.length);
     const spooferId = threatIds[randomThreatIndex];
-    
     cardAssignments[spooferId] = 'SPOOF';
-    
-    // Remove the Spoofer from the pool so they don't get a second card
     availableForStandardCards = availableForStandardCards.filter(id => id !== spooferId);
   }
 
   // B. Assign RADAR and SILENCER (To anyone remaining in the pool)
   const shuffledOthers = availableForStandardCards.sort(() => Math.random() - 0.5);
 
+  // --- UPDATED: 2 RADARS + 1 SILENCER ---
   if (shuffledOthers.length > 0) cardAssignments[shuffledOthers.pop()!] = 'RADAR';
+  if (shuffledOthers.length > 0) cardAssignments[shuffledOthers.pop()!] = 'RADAR'; // 2nd Radar
   if (shuffledOthers.length > 0) cardAssignments[shuffledOthers.pop()!] = 'SILENCER';
 
   return {

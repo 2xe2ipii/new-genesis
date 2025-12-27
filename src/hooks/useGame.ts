@@ -37,13 +37,13 @@ export const useGame = () => {
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
         cardTargetId: null,
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
-        isScrambled: false 
+        isScrambled: false, isEliminated: false
       };
 
       const newRoom: Room = {
         code: roomCode, hostId: playerId, players: { [playerId]: newPlayer },
         phase: 'LOBBY', timerEndTime: 0, majorityWord: '', impostorWord: '',
-        votesToSkipDiscussion: [], winner: null,
+        votesToSkipDiscussion: [], winner: null, round: 1
       };
 
       await set(ref(db, `rooms/${roomCode}`), newRoom);
@@ -61,7 +61,7 @@ export const useGame = () => {
     try {
       const snapshot = await get(ref(db, `rooms/${code}`));
       if (!snapshot.exists()) throw new Error('404 Not Found');
-      
+
       const roomData = snapshot.val();
       if (roomData.phase !== 'LOBBY' && !roomData.players[playerId]) {
         throw new Error('Game in progress');
@@ -72,7 +72,7 @@ export const useGame = () => {
         role: null, secretWord: '', abilityCard: null, isCardUsed: false,
         cardTargetId: null,
         votedFor: null, isVoteLocked: false, votesReceived: 0, isSilenced: false,
-        isScrambled: false
+        isScrambled: false, isEliminated: false
       };
 
       await update(ref(db, `rooms/${code}/players/${playerId}`), newPlayer);
@@ -104,13 +104,13 @@ export const useGame = () => {
       const updates: Record<string, any> = {};
 
       updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
+      updates[`rooms/${gameState.code}/round`] = 1;
+      updates[`rooms/${gameState.code}/winner`] = null;
       updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 10 * 60 * 1000;
       updates[`rooms/${gameState.code}/majorityWord`] = majority;
       updates[`rooms/${gameState.code}/impostorWord`] = impostor;
       updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
-      
-      // FIX 1: Clear System Messages on Start
-      updates[`rooms/${gameState.code}/systemMessages`] = null; 
+      updates[`rooms/${gameState.code}/systemMessages`] = null;
 
       Object.keys(gameState.players).forEach(pid => {
         updates[`rooms/${gameState.code}/players/${pid}/role`] = assignments[pid].role;
@@ -123,6 +123,7 @@ export const useGame = () => {
         updates[`rooms/${gameState.code}/players/${pid}/votesReceived`] = 0;
         updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
         updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
+        updates[`rooms/${gameState.code}/players/${pid}/isEliminated`] = false;
       });
 
       await update(ref(db), updates);
@@ -136,42 +137,35 @@ export const useGame = () => {
   // --- CARD LOGIC ---
   const useCard = async (targetId: string): Promise<void> => {
     if (!gameState) return;
-    
     const myPlayer = gameState.players[playerId];
-    const targetPlayer = gameState.players[targetId];
-    if (!myPlayer.abilityCard || myPlayer.isCardUsed) return;
+    if (!myPlayer.abilityCard || myPlayer.isCardUsed || myPlayer.isEliminated) return;
 
     const updates: Record<string, any> = {};
-
-    // 1. Mark Card as Used & SAVE TARGET
     updates[`rooms/${gameState.code}/players/${playerId}/isCardUsed`] = true;
     updates[`rooms/${gameState.code}/players/${playerId}/cardTargetId`] = targetId;
 
-    // 2. Handle Effects
+    const targetPlayer = gameState.players[targetId];
+
     if (myPlayer.abilityCard === 'RADAR') {
       const isActuallyThreat = ['SPY', 'TOURIST', 'JOKER'].includes(targetPlayer.role || '');
       // @ts-ignore
       const isScrambled = targetPlayer.isScrambled === true;
-      
       const finalResultIsThreat = isScrambled ? !isActuallyThreat : isActuallyThreat;
       const resultText = finalResultIsThreat ? `THREAT` : `SAFE`;
 
-      if (isScrambled) {
-        updates[`rooms/${gameState.code}/players/${targetId}/isScrambled`] = false;
-      }
-      
+      if (isScrambled) updates[`rooms/${gameState.code}/players/${targetId}/isScrambled`] = false;
+
       const msgRef = push(ref(db, `rooms/${gameState.code}/systemMessages`));
       updates[`rooms/${gameState.code}/systemMessages/${msgRef.key}`] = {
         type: 'RADAR_RESULT',
         text: `SCAN RESULT: ${targetPlayer.name} is confirmed ${resultText}.`,
-        targetId: targetId, 
-        timestamp: Date.now()
+        targetId: targetId, timestamp: Date.now()
       };
-    } 
+    }
     else if (myPlayer.abilityCard === 'SILENCER') {
       updates[`rooms/${gameState.code}/players/${targetId}/isSilenced`] = true;
     }
-    else if (myPlayer.abilityCard === 'SPOOF') { 
+    else if (myPlayer.abilityCard === 'SPOOF') {
       updates[`rooms/${gameState.code}/players/${targetId}/isScrambled`] = true;
     }
 
@@ -181,46 +175,42 @@ export const useGame = () => {
   // --- SKIP LOGIC ---
   const voteToSkip = async () => {
     if (!gameState) return;
-    
     const roomRef = ref(db, `rooms/${gameState.code}`);
     await runTransaction(roomRef, (currentRoom: Room) => {
       if (!currentRoom) return;
       if (!currentRoom.votesToSkipDiscussion) currentRoom.votesToSkipDiscussion = [];
-      
       const idx = currentRoom.votesToSkipDiscussion.indexOf(playerId);
-      
-      if (idx !== -1) {
-        currentRoom.votesToSkipDiscussion.splice(idx, 1);
-      } else {
-        currentRoom.votesToSkipDiscussion.push(playerId);
-      }
+      if (idx !== -1) currentRoom.votesToSkipDiscussion.splice(idx, 1);
+      else currentRoom.votesToSkipDiscussion.push(playerId);
 
-      const totalPlayers = Object.keys(currentRoom.players).length;
-      if (currentRoom.votesToSkipDiscussion.length >= totalPlayers) {
+      const activePlayers = Object.values(currentRoom.players).filter(p => !p.isEliminated).length;
+      if (currentRoom.votesToSkipDiscussion.length >= activePlayers) {
         currentRoom.phase = 'VOTING';
       }
-      
       return currentRoom;
     });
   };
 
   const castVote = async (targetId: string) => {
     if (!gameState) return;
-    
+    const myPlayer = gameState.players[playerId];
+    if (myPlayer.isEliminated) return;
+
     const updates: Record<string, any> = {};
     updates[`rooms/${gameState.code}/players/${playerId}/votedFor`] = targetId;
     updates[`rooms/${gameState.code}/players/${playerId}/isVoteLocked`] = true;
-    
+
     await update(ref(db), updates);
   };
 
   const checkVotingComplete = async () => {
     if (!gameState || !gameState.players[playerId].isHost) return;
-    
+
     const players = Object.values(gameState.players);
-    const totalVotes = players.filter(p => p.isVoteLocked).length;
-    
-    if (totalVotes === players.length && gameState.phase === 'VOTING') {
+    const activePlayers = players.filter(p => !p.isEliminated);
+    const totalVotes = activePlayers.filter(p => p.isVoteLocked).length;
+
+    if (totalVotes === activePlayers.length && gameState.phase === 'VOTING') {
       await set(ref(db, `rooms/${gameState.code}/phase`), 'SUSPENSE');
       setTimeout(() => calculateResults(), 3000);
     }
@@ -228,66 +218,99 @@ export const useGame = () => {
 
   const calculateResults = async () => {
     if (!gameState) return;
-    
+
     const players = Object.values(gameState.players);
     const votes: Record<string, number> = {};
-    
+
     players.forEach(voter => {
-      if (voter.votedFor && !voter.isSilenced) {
+      if (voter.votedFor && !voter.isSilenced && !voter.isEliminated) {
         votes[voter.votedFor] = (votes[voter.votedFor] || 0) + 1;
       }
     });
 
     let maxVotes = 0;
     let mostVotedPlayerId: string | null = null;
-    
+
     Object.entries(votes).forEach(([pid, count]) => {
       if (count > maxVotes) {
         maxVotes = count;
         mostVotedPlayerId = pid;
       } else if (count === maxVotes) {
-        mostVotedPlayerId = null; 
+        mostVotedPlayerId = null;
       }
     });
 
-    let winner: 'LOCALS' | 'SPY' | 'JOKER' = 'SPY'; 
-    
+    let winner: 'LOCALS' | 'SPY' | 'JOKER' | null = null;
+    const currentRound = gameState.round || 1;
+
     if (mostVotedPlayerId) {
       const victim = gameState.players[mostVotedPlayerId];
+
       if (victim.role === 'SPY') winner = 'LOCALS';
       else if (victim.role === 'JOKER') winner = 'JOKER';
-      else winner = 'SPY'; 
+      else {
+        if (currentRound === 1) winner = null;
+        else winner = 'SPY';
+      }
+    } else {
+      if (currentRound === 1) winner = null;
+      else winner = 'SPY';
     }
 
     const updates: Record<string, any> = {};
-    updates[`rooms/${gameState.code}/winner`] = winner;
     updates[`rooms/${gameState.code}/phase`] = 'RESULTS';
-    
+    if (winner) {
+      updates[`rooms/${gameState.code}/winner`] = winner;
+    } else {
+      if (mostVotedPlayerId) {
+        updates[`rooms/${gameState.code}/players/${mostVotedPlayerId}/isEliminated`] = true;
+      }
+    }
+
+    await update(ref(db), updates);
+  };
+
+  // --- NEW ACTION: PROCEED TO ROUND 2 ---
+  const startNextRound = async () => {
+    if (!gameState) return;
+    const updates: Record<string, any> = {};
+
+    updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
+    updates[`rooms/${gameState.code}/round`] = 2;
+    updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
+    updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 5 * 60 * 1000;
+
+    Object.keys(gameState.players).forEach(pid => {
+      updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
+      updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
+      updates[`rooms/${gameState.code}/players/${pid}/votesReceived`] = 0;
+    });
+
     await update(ref(db), updates);
   };
 
   const returnToLobby = async () => {
-     if (!gameState) return;
-     const updates: Record<string, any> = {};
-     updates[`rooms/${gameState.code}/phase`] = 'LOBBY';
-     updates[`rooms/${gameState.code}/winner`] = null;
-     updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
-     
-     // FIX 1: Clear System Messages on Return
-     updates[`rooms/${gameState.code}/systemMessages`] = null;
+    if (!gameState) return;
+    const updates: Record<string, any> = {};
+    updates[`rooms/${gameState.code}/phase`] = 'LOBBY';
+    updates[`rooms/${gameState.code}/winner`] = null;
+    updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
+    updates[`rooms/${gameState.code}/systemMessages`] = null;
+    updates[`rooms/${gameState.code}/round`] = 1;
 
-     Object.keys(gameState.players).forEach(pid => {
-       updates[`rooms/${gameState.code}/players/${pid}/isReady`] = false;
-       updates[`rooms/${gameState.code}/players/${pid}/role`] = null;
-       updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
-       updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
-       updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
-       updates[`rooms/${gameState.code}/players/${pid}/cardTargetId`] = null;
-       updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
-       updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false;
-     });
-     
-     await update(ref(db), updates);
+    Object.keys(gameState.players).forEach(pid => {
+      updates[`rooms/${gameState.code}/players/${pid}/isReady`] = false;
+      updates[`rooms/${gameState.code}/players/${pid}/role`] = null;
+      updates[`rooms/${gameState.code}/players/${pid}/votedFor`] = null;
+      updates[`rooms/${gameState.code}/players/${pid}/isVoteLocked`] = false;
+      updates[`rooms/${gameState.code}/players/${pid}/isCardUsed`] = false;
+      updates[`rooms/${gameState.code}/players/${pid}/cardTargetId`] = null;
+      updates[`rooms/${gameState.code}/players/${pid}/isSilenced`] = false;
+      updates[`rooms/${gameState.code}/players/${pid}/isScrambled`] = false;
+      updates[`rooms/${gameState.code}/players/${pid}/isEliminated`] = false;
+    });
+
+    await update(ref(db), updates);
   };
 
   const clearError = () => setError(null);
@@ -296,7 +319,7 @@ export const useGame = () => {
     gameState, playerId, loading, error,
     createRoom, joinRoom, leaveRoom, toggleReady,
     startGame, useCard, voteToSkip,
-    castVote, checkVotingComplete, returnToLobby,
+    castVote, checkVotingComplete, returnToLobby, startNextRound,
     clearError
   };
 };
