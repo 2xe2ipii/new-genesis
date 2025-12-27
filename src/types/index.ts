@@ -68,7 +68,8 @@ export interface Room {
   timerEndTime: number;
   majorityWord: string;
   impostorWord: string;
-  votesToSkipDiscussion: string[]; 
+  wordType: 'word' | 'question';
+  votesToSkipDiscussion: string[];
   winner: 'LOCALS' | 'SPY' | 'JOKER' | null;
   systemMessages?: Record<string, SystemMessage>;
 }
