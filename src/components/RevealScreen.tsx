@@ -12,32 +12,36 @@ interface RevealScreenProps {
 export const RevealScreen: React.FC<RevealScreenProps> = ({ player, wordType, onReadyToDiscuss }) => {
   const [isRevealed, setIsRevealed] = useState(false);
 
-  // 1. THEME & TEXT LOGIC
+  // 1. THEME LOGIC
   const getRoleConfig = () => {
     switch (player.role) {
       case 'SPY': 
         return { 
           color: 'text-rose-500', 
-          directive: "INFILTRATE. DECEIVE. SURVIVE.",
-          bg: "bg-rose-950/10"
+          border: 'border-rose-500',
+          bg: 'bg-rose-950/30',
+          icon: '🕵️'
         };
       case 'TOURIST': 
         return { 
           color: 'text-amber-500', 
-          directive: "OBSERVE. BLEND IN. REMAIN CALM.",
-          bg: "bg-amber-950/10"
+          border: 'border-amber-500',
+          bg: 'bg-amber-950/30',
+          icon: '📸'
         };
       case 'JOKER': 
         return { 
           color: 'text-fuchsia-500', 
-          directive: "DISRUPT. CONFUSE. PREVAIL.",
-          bg: "bg-fuchsia-950/10"
+          border: 'border-fuchsia-500',
+          bg: 'bg-fuchsia-950/30',
+          icon: '🤡'
         };
       default: // LOCAL
         return { 
           color: 'text-violet-500', 
-          directive: "IDENTIFY THE INTRUDER. PROTECT THE SECRET.",
-          bg: "bg-slate-900/50"
+          border: 'border-violet-500',
+          bg: 'bg-violet-950/30',
+          icon: '👤'
         };
     }
   };
@@ -45,119 +49,96 @@ export const RevealScreen: React.FC<RevealScreenProps> = ({ player, wordType, on
   const config = getRoleConfig();
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-6 animate-in fade-in duration-500 relative overflow-hidden font-mono">
+    <div className="flex flex-col items-center justify-center h-full p-6 relative overflow-hidden font-mono">
       
-      {/* Background Noise */}
-      <div className={`absolute inset-0 pointer-events-none ${config.bg}`} />
+      {/* Background Ambience */}
+      <div className="absolute inset-0 pointer-events-none bg-slate-950" />
       
-      <div className="w-full max-w-sm relative z-10 flex flex-col h-full justify-center">
+      <div className="w-full max-w-sm relative z-10">
         
-        {/* HEADER */}
-        <div className="text-center mb-10 space-y-2 opacity-70">
-          <div className="flex justify-center gap-2 text-[10px] text-slate-500 tracking-[0.2em]">
-            <span>SECURE_CONNECTION</span>
-            <span className="animate-pulse">●</span>
-            <span>ENCRYPTED</span>
-          </div>
-        </div>
-
-        <div className="relative min-h-[400px]">
-          <AnimatePresence mode="wait">
-            {!isRevealed ? (
-              /* --- STATE 1: LOCKED --- */
-              <motion.button
-                key="locked"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, filter: "blur(10px)" }}
-                onClick={() => setIsRevealed(true)}
-                className="w-full h-[400px] border-l-2 border-slate-700 hover:border-violet-500 bg-slate-950/50 pl-6 flex flex-col justify-center text-left gap-4 group transition-colors"
-              >
-                <div className="space-y-1">
-                  <p className="text-xs text-slate-500 typing-effect">Incoming transmission...</p>
-                  <p className="text-xs text-slate-500">Source: HQ</p>
-                  <p className="text-xs text-slate-500">Subject: OPERATION GENESIS</p>
-                </div>
-                
-                <div className="mt-4">
-                   <p className="text-xl font-bold text-white group-hover:text-violet-400 transition-colors blinking-cursor">
-                     [ TAP TO DECRYPT ]
-                   </p>
-                </div>
-              </motion.button>
-            ) : (
-              /* --- STATE 2: THE MESSAGE --- */
-              <motion.div
-                key="revealed"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="w-full h-auto text-left space-y-8"
-              >
-                {/* 1. GREETING */}
-                <div className="space-y-1 border-l-2 border-slate-700 pl-4 py-1">
-                  <p className="text-xs text-slate-500 uppercase tracking-widest">To: Agent {player.name}</p>
-                  <p className="text-xs text-slate-500 uppercase tracking-widest">Priority: CRITICAL</p>
-                </div>
-
-                {/* 2. THE CONTENT BODY */}
-                <div className="space-y-6 text-sm text-slate-300 leading-relaxed">
-                  <p>
-                    You have been activated. Your assignment is confirmed as <strong className={`text-xl ${config.color} uppercase tracking-wider`}>{player.role}</strong>.
-                  </p>
-
-                  <div className="py-4 border-y border-slate-800/50">
-                    <p className="mb-2 text-xs text-slate-500 uppercase tracking-widest">
-                      {wordType === 'question' ? 'Security Question' : 'Passphrase'}
-                    </p>
-                    <p className={`${wordType === 'question' ? 'text-xl md:text-2xl leading-relaxed' : 'text-4xl md:text-5xl'} font-black text-white tracking-widest drop-shadow-md`}>
-                      {player.secretWord || "UNKNOWN"}
-                    </p>
-                  </div>
-
-                  <p className="italic text-slate-500 text-xs tracking-wide">
-                    // DIRECTIVE: {config.directive}
-                  </p>
-
-                  {/* ITEM SECTION */}
-                  {player.abilityCard && (
-                    <div className="bg-amber-500/5 border-l-2 border-amber-500/50 p-4 mt-4">
-                      <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">
-                        Logistics Update
-                      </p>
-                      <p className="text-amber-200">
-                        Equipment issued: <strong className="text-amber-400 uppercase">{player.abilityCard}</strong>.
-                        Use with discretion.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* FOOTER: SYSTEM ACTION BAR */}
-        <div className="mt-10">
-          {isRevealed && (
+        <AnimatePresence mode="wait">
+          {!isRevealed ? (
+            /* --- STATE 1: LOCKED CARD (FACE DOWN) --- */
             <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              onClick={onReadyToDiscuss}
-              // A wide, bordered bar that looks like a UI element, not just text, but fits the terminal theme.
-              className="w-full py-4 border-y border-slate-700 bg-slate-900/50 hover:bg-slate-800 hover:border-slate-500 text-slate-400 hover:text-white transition-all flex items-center justify-between px-4 group"
+              key="locked"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ rotateY: 90, opacity: 0, transition: { duration: 0.2 } }}
+              onClick={() => setIsRevealed(true)}
+              className="w-full aspect-[3/4] rounded-xl border-2 border-slate-700 bg-slate-900 shadow-2xl flex flex-col items-center justify-center gap-6 group hover:border-slate-500 transition-all cursor-pointer relative overflow-hidden"
             >
-              <span className="text-xs opacity-50 group-hover:opacity-100">{`[ 001 ]`}</span>
+              {/* Decorative patterns */}
+              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-500 to-transparent" />
+              <div className="text-6xl opacity-20 group-hover:scale-110 transition-transform">🔒</div>
               
-              <span className="font-mono text-xs uppercase tracking-[0.2em] font-bold">
-                 YIELD_&_BURN
-              </span>
-              
-              <span className="text-xs opacity-50 group-hover:opacity-100">{`[ END ]`}</span>
+              <div className="z-10 text-center space-y-2">
+                <p className="text-slate-400 text-sm tracking-[0.2em] uppercase">Identity Encrypted</p>
+                <p className="text-white text-lg font-bold bg-slate-800 px-4 py-2 rounded-full border border-slate-700 group-hover:bg-slate-700 transition-colors">
+                  TAP TO REVEAL
+                </p>
+              </div>
             </motion.button>
-          )}
-        </div>
+          ) : (
+            /* --- STATE 2: ID CARD (REVEALED) --- */
+            <motion.div
+              key="revealed"
+              initial={{ rotateY: -90, opacity: 0 }}
+              animate={{ rotateY: 0, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className={`w-full aspect-[3/4] rounded-xl border-2 ${config.border} ${config.bg} relative flex flex-col overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)] backdrop-blur-sm`}
+            >
+              {/* HEADER: ID STRIP */}
+              <div className={`h-24 w-full border-b ${config.border} bg-slate-900/80 flex items-center px-6 justify-between`}>
+                 <div>
+                   <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Agent Name</p>
+                   <p className="text-xl font-bold text-white uppercase tracking-wider">{player.name}</p>
+                 </div>
+                 <div className="text-4xl filter drop-shadow-lg">{config.icon}</div>
+              </div>
 
+              {/* BODY: ROLE & WORD */}
+              <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-8 text-center">
+                
+                {/* ROLE DISPLAY */}
+                <div className="w-full space-y-1">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-[0.3em]">Assignment</p>
+                  <h2 className={`text-4xl font-black ${config.color} uppercase tracking-tight drop-shadow-md`}>
+                    {player.role}
+                  </h2>
+                </div>
+
+                {/* SECRET WORD DISPLAY */}
+                <div className="w-full py-4 border-y border-white/10 bg-black/20 space-y-2">
+                  <p className="text-[10px] text-slate-400 uppercase tracking-widest">
+                    {wordType === 'question' ? 'Security Question' : 'Passphrase'}
+                  </p>
+                  <p className="text-2xl font-bold text-white">
+                    {player.secretWord || "???"}
+                  </p>
+                </div>
+
+                {/* ITEM SLOT (Only if exists) */}
+                {player.abilityCard && (
+                  <div className="w-full flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded px-4 py-3">
+                    <span className="text-[10px] text-amber-500 uppercase tracking-wider font-bold">Equipped Item</span>
+                    <span className="text-sm text-amber-300 font-bold uppercase">{player.abilityCard}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* FOOTER: ACTION BUTTON */}
+              <button
+                onClick={onReadyToDiscuss}
+                className="h-16 w-full bg-slate-900 border-t border-slate-700 hover:bg-slate-800 transition-colors flex items-center justify-center group"
+              >
+                <span className="text-xs text-slate-400 group-hover:text-white uppercase tracking-[0.2em] font-bold">
+                  Burn & Proceed &rarr;
+                </span>
+              </button>
+
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

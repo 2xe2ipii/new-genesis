@@ -7,11 +7,11 @@ const MANUAL_DATA = {
   overview: [
     {
       title: 'OBJECTIVE',
-      content: 'A social deduction game of deception and detection. Players are assigned an ID card containing a Role, a Secret Word, and potentially an Item.'
+      content: 'A social deduction game of deception and detection. Players are assigned a Role, a Secret Word, and sometimes an Item.'
     },
     {
       title: 'CATEGORIES',
-      content: 'Players are divided into two radar signatures:\n• SAFE: Locals only.\n• THREAT: Spy, Joker, and Tourist.'
+      content: 'SAFE = [ Locals ] ----- \nTHREAT = [ Spy, Joker, Tourist ]'
     },
     {
       title: 'WINNING',
@@ -28,8 +28,8 @@ const MANUAL_DATA = {
     { 
       title: 'SPY', 
       type: 'Threat', 
-      goal: 'Survive & Protect Joker.',
-      info: 'Receives the Imposter Word. Wins if they survive to the end AND the Joker is not voted out. Wins automatically on a Round 2 Tie.' 
+      goal: 'Survive',
+      info: 'Receives the Imposter Word. Wins if they survive to the end. EXCEPT if JOKER wins.' 
     },
     { 
       title: 'JOKER', 
@@ -58,7 +58,7 @@ const MANUAL_DATA = {
     { 
       title: 'SILENCER', 
       desc: 'Disable a player\'s voting power.', 
-      note: 'The target can still speak, but their vote will count as 0 for the entire game (Round 1 & 2).' 
+      note: 'The target is still allowed to talk, but their vote will count as 0 for the entire game (Round 1 & 2).' 
     }
   ],
   rules: [
@@ -72,7 +72,7 @@ const MANUAL_DATA = {
     },
     {
       title: 'TIES',
-      content: 'Round 1 Tie: No one dies. Proceed to Round 2.\nRound 2 Tie: The Spy wins.'
+      content: 'Round 1 Tie: No one dies. Proceed to Round 2.\nRound 2 Tie: The Spy wins. Since the nobody dies in a tie, Spy survived.'
     },
     {
       title: 'ITEM USAGE',
@@ -166,8 +166,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                        {MANUAL_DATA.overview.map((item, i) => (
                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} key={i}>
                            <h3 className="text-violet-400 font-bold uppercase tracking-wider text-xs mb-2">{item.title}</h3>
-                           {/* FIX: Added whitespace-pre-line to allow \n to work */}
-                           <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">{item.content}</p>
+                           <p className="text-sm text-slate-300 leading-relaxed">{item.content}</p>
                          </motion.div>
                        ))}
                      </div>
