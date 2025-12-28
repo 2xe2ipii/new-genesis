@@ -44,7 +44,8 @@ export const useGame = () => {
         code: roomCode, hostId: playerId, players: { [playerId]: newPlayer },
         phase: 'LOBBY', timerEndTime: 0, majorityWord: '', impostorWord: '',
         wordType: 'word',
-        votesToSkipDiscussion: [], winner: null, round: 1
+        votesToSkipDiscussion: [], winner: null, round: 1,
+        usedWordIndices: [] // <--- ADD THIS LINE
       };
 
       await set(ref(db, `rooms/${roomCode}`), newRoom);
@@ -101,17 +102,25 @@ export const useGame = () => {
     if (!gameState) return;
     setLoading(true);
     try {
-      const { assignments, cardAssignments, wordType } = distributeGameRoles(gameState.players);
+      // 1. Pass the history to the function
+      const { assignments, cardAssignments, wordType, newWordIndex } = distributeGameRoles(
+        gameState.players, 
+        gameState.usedWordIndices || []
+      );
+      
       const updates: Record<string, any> = {};
 
       updates[`rooms/${gameState.code}/phase`] = 'DISCUSSION';
       updates[`rooms/${gameState.code}/round`] = 1;
       updates[`rooms/${gameState.code}/winner`] = null;
-      // FIX: Set timer to 7 minutes (7 * 60 * 1000)
       updates[`rooms/${gameState.code}/timerEndTime`] = Date.now() + 7 * 60 * 1000;
       updates[`rooms/${gameState.code}/wordType`] = wordType;
       updates[`rooms/${gameState.code}/votesToSkipDiscussion`] = [];
       updates[`rooms/${gameState.code}/systemMessages`] = null;
+
+      // 2. Update the history in Firebase so it isn't picked next time
+      const currentHistory = gameState.usedWordIndices || [];
+      updates[`rooms/${gameState.code}/usedWordIndices`] = [...currentHistory, newWordIndex];
 
       Object.keys(gameState.players).forEach(pid => {
         updates[`rooms/${gameState.code}/players/${pid}/role`] = assignments[pid].role;

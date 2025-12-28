@@ -69,6 +69,7 @@ export interface Room {
   majorityWord: string;
   impostorWord: string;
   wordType: 'word' | 'question';
+  usedWordIndices: number[];
   votesToSkipDiscussion: string[];
   winner: 'LOCALS' | 'SPY' | 'JOKER' | null;
   systemMessages?: Record<string, SystemMessage>;

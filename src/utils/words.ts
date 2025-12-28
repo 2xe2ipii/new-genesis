@@ -236,7 +236,25 @@ export const WORD_PAIRS = [
   { majority: "Tsinelas", impostor: "Weapon", type: "word" },
 ];
 
-export const getRandomWordPair = () => {
-  const index = Math.floor(Math.random() * WORD_PAIRS.length);
-  return WORD_PAIRS[index];
+export const getUniqueWordPair = (usedIndices: number[] = []) => {
+  // 1. Create a pool of ALL valid indices (0 to length-1)
+  const allIndices = Array.from({ length: WORD_PAIRS.length }, (_, i) => i);
+
+  // 2. Filter out the ones we've already used
+  const availableIndices = allIndices.filter(index => !usedIndices.includes(index));
+
+  // 3. Safety Check: If we ran out of words, reset the pool (or just pick random)
+  if (availableIndices.length === 0) {
+    const fallbackIndex = Math.floor(Math.random() * WORD_PAIRS.length);
+    return { wordPair: WORD_PAIRS[fallbackIndex], index: fallbackIndex };
+  }
+
+  // 4. Pick a random index from the AVAILABLE pool
+  const randomIndex = Math.floor(Math.random() * availableIndices.length);
+  const selectedIndex = availableIndices[randomIndex];
+
+  return { 
+    wordPair: WORD_PAIRS[selectedIndex], 
+    index: selectedIndex 
+  };
 };

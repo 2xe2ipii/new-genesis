@@ -1,13 +1,18 @@
 // src/utils/gameLogic.ts
 import type { Player, PlayerRole, AbilityCard } from '../types';
-import { getRandomWordPair } from './words';
+import { getUniqueWordPair } from './words'; // <--- Import the new function
 
-export const distributeGameRoles = (players: Record<string, Player>) => {
+// Update signature to accept usedIndices
+export const distributeGameRoles = (
+  players: Record<string, Player>, 
+  usedIndices: number[] = [] 
+) => {
   const playerIds = Object.keys(players);
   const count = playerIds.length;
   
-  // 1. Get Words
-  const { majority, impostor, type } = getRandomWordPair();
+  // 1. Get Unique Word Pair
+  const { wordPair, index } = getUniqueWordPair(usedIndices);
+  const { majority, impostor, type } = wordPair;
   
   // 2. Shuffle Players for Roles
   const shuffledForRoles = [...playerIds].sort(() => Math.random() - 0.5);
@@ -37,19 +42,14 @@ export const distributeGameRoles = (players: Record<string, Player>) => {
 
   // 3. Distribute Cards (Limit 3 cards total)
   const cardAssignments: Record<string, AbilityCard> = {};
-  
-  // Initialize everyone with null first
   playerIds.forEach(id => cardAssignments[id] = null);
 
-  // Identify Threats to potentially receive SPOOF
   const threatIds = playerIds.filter(id => 
     ['SPY', 'JOKER', 'TOURIST'].includes(assignments[id].role)
   );
-
-  // Pool of players available for Standard Cards (initially everyone)
   let availableForStandardCards = [...playerIds];
 
-  // A. Assign SPOOF (Only to a Threat)
+  // A. Assign SPOOF
   if (threatIds.length > 0) {
     const randomThreatIndex = Math.floor(Math.random() * threatIds.length);
     const spooferId = threatIds[randomThreatIndex];
@@ -57,12 +57,11 @@ export const distributeGameRoles = (players: Record<string, Player>) => {
     availableForStandardCards = availableForStandardCards.filter(id => id !== spooferId);
   }
 
-  // B. Assign RADAR and SILENCER (To anyone remaining in the pool)
+  // B. Assign RADAR and SILENCER
   const shuffledOthers = availableForStandardCards.sort(() => Math.random() - 0.5);
 
-  // --- UPDATED: 2 RADARS + 1 SILENCER ---
   if (shuffledOthers.length > 0) cardAssignments[shuffledOthers.pop()!] = 'RADAR';
-  if (shuffledOthers.length > 0) cardAssignments[shuffledOthers.pop()!] = 'RADAR'; // 2nd Radar
+  if (shuffledOthers.length > 0) cardAssignments[shuffledOthers.pop()!] = 'RADAR';
   if (shuffledOthers.length > 0) cardAssignments[shuffledOthers.pop()!] = 'SILENCER';
 
   return {
@@ -70,6 +69,7 @@ export const distributeGameRoles = (players: Record<string, Player>) => {
     cardAssignments,
     majority,
     impostor,
-    wordType: type
+    wordType: type,
+    newWordIndex: index // <--- Return this so you can save it to Firebase
   };
 };
